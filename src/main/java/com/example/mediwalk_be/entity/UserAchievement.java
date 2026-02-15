@@ -37,4 +37,13 @@ public class UserAchievement extends BaseEntity {
 	private Boolean isAchieved = false;
 
 	private LocalDateTime achievedDate;
+
+	/** 진행도 추가. 목표 도달 시 달성 처리 */
+	public void addProgress(int delta, int targetValue) {
+		this.currentProgress += delta;
+		if (this.currentProgress >= targetValue) {
+			this.isAchieved = true;
+			this.achievedDate = LocalDateTime.now();
+		}
+	}
 }

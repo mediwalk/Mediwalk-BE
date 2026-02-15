@@ -46,4 +46,11 @@ public class UserDailyMission extends BaseEntity {
 
 	/** 획득한 리워드 (원) */
 	private Integer earnedReward;
+
+	/** 미션 완료 처리 */
+	public void complete(LocalDateTime completedAt, Integer earnedReward) {
+		this.completedAt = completedAt;
+		this.earnedReward = earnedReward;
+		this.status = MissionStatus.COMPLETED;
+	}
 }

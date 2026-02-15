@@ -30,4 +30,9 @@ public class DailySteps extends BaseEntity {
 	@Column(nullable = false)
 	@Builder.Default
 	private Integer stepsCount = 0;
+
+	/** 걸음 수 추가 */
+	public void addSteps(int count) {
+		this.stepsCount += count;
+	}
 }
