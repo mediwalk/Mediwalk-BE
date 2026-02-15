@@ -25,6 +25,17 @@ public class CollectionLocationController {
 				.toList();
 	}
 
+	@GetMapping("/nearby")
+	public List<CollectionLocationResponse> findNearby(
+			@RequestParam double latitude,
+			@RequestParam double longitude,
+			@RequestParam(defaultValue = "3") double radiusKm) {
+		int radiusMeters = (int) (radiusKm * 1000);
+		return collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, radiusMeters).stream()
+				.map(CollectionLocationResponse::from)
+				.toList();
+	}
+
 	@GetMapping("/{id}")
 	public ResponseEntity<CollectionLocationResponse> findById(@PathVariable Long id) {
 		return collectionLocationService.findById(id)
