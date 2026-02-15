@@ -1,0 +1,45 @@
+package com.example.mediwalk_be.controller;
+
+import com.example.mediwalk_be.dto.response.RewardTransactionResponse;
+import com.example.mediwalk_be.service.RewardTransactionService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+
+@RestController
+@RequestMapping("/api/reward-transactions")
+@RequiredArgsConstructor
+public class RewardTransactionController {
+
+	private final RewardTransactionService rewardTransactionService;
+
+	@GetMapping("/{id}")
+	public ResponseEntity<RewardTransactionResponse> findById(@PathVariable Long id) {
+		return rewardTransactionService.findById(id)
+				.map(RewardTransactionResponse::from)
+				.map(ResponseEntity::ok)
+				.orElse(ResponseEntity.notFound().build());
+	}
+
+	@GetMapping(params = "userId")
+	public List<RewardTransactionResponse> findByUserId(
+			@RequestParam Long userId,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+		return rewardTransactionService.findByUserIdOrderByTransactionDateDesc(userId, PageRequest.of(page, size)).stream()
+				.map(RewardTransactionResponse::from)
+				.toList();
+	}
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
+		if (rewardTransactionService.findById(id).isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		rewardTransactionService.deleteById(id);
+		return ResponseEntity.noContent().build();
+	}
+}

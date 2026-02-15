@@ -35,8 +35,8 @@ public class PointOfInterest extends BaseEntity {
 	@Column(nullable = false)
 	private Double longitude;
 
-	/** 경로상 순서 */
-	@Column(nullable = false)
+	/** 경로상 순서 (MySQL 예약어 order 회피) */
+	@Column(nullable = false, name = "display_order")
 	private Integer order;
 
 	/** 이전 지점으로부터의 거리 (미터). 예: 300m 앞 공원 벤치 */
