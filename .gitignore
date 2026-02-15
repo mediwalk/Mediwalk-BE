@@ -1,5 +1,8 @@
 HELP.md
 .gradle
+
+### macOS ###
+.DS_Store
 build/
 !gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
@@ -35,3 +38,13 @@ out/
 
 ### VS Code ###
 .vscode/
+
+### Logs & temp ###
+*.log
+logs/
+
+### Local config (DB password 등 비공개 설정) ###
+application-local.yaml
+application-*-local.yaml
+.env
+.env.*
