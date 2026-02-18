@@ -2,6 +2,7 @@ package com.example.mediwalk_be.controller;
 
 import com.example.mediwalk_be.dto.request.CreateCollectionLocationRequest;
 import com.example.mediwalk_be.dto.response.CollectionLocationResponse;
+import com.example.mediwalk_be.dto.response.CollectionLocationWithDistanceResponse;
 import com.example.mediwalk_be.entity.CollectionLocation;
 import com.example.mediwalk_be.service.CollectionLocationService;
 import lombok.RequiredArgsConstructor;
@@ -16,6 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CollectionLocationController {
 
+	private static final int NEARBY_RADIUS_METERS = 3000; // 3km 통일
+
 	private final CollectionLocationService collectionLocationService;
 
 	@GetMapping
@@ -26,14 +29,17 @@ public class CollectionLocationController {
 	}
 
 	@GetMapping("/nearby")
-	public List<CollectionLocationResponse> findNearby(
+	public List<CollectionLocationWithDistanceResponse> findNearby(
 			@RequestParam double latitude,
 			@RequestParam double longitude,
-			@RequestParam(defaultValue = "3") double radiusKm) {
-		int radiusMeters = (int) (radiusKm * 1000);
-		return collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, radiusMeters).stream()
-				.map(CollectionLocationResponse::from)
+			@RequestParam(required = false) Integer limit) {
+		var locations = collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, NEARBY_RADIUS_METERS).stream()
+				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
 				.toList();
+		if (limit != null && limit > 0) {
+			return locations.stream().limit(limit).toList();
+		}
+		return locations;
 	}
 
 	@GetMapping("/{id}")
