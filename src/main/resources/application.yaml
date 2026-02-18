@@ -1,3 +1,7 @@
+app:
+  ai:
+    route-generation-url: ${AI_ROUTE_GENERATION_URL:}
+
 spring:
   application:
     name: mediwalk-be

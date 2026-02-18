@@ -1,9 +1,13 @@
 package com.example.mediwalk_be.controller;
 
+import com.example.mediwalk_be.dto.request.CreateRouteRequest;
+import com.example.mediwalk_be.dto.request.RouteGenerationRequest;
 import com.example.mediwalk_be.dto.response.RouteResponse;
 import com.example.mediwalk_be.service.RouteService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +19,18 @@ import java.util.List;
 public class RouteController {
 
 	private final RouteService routeService;
+
+	@PostMapping
+	public ResponseEntity<RouteResponse> create(@RequestBody CreateRouteRequest request) {
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(RouteResponse.from(routeService.create(request)));
+	}
+
+	@PostMapping("/generate")
+	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(RouteResponse.from(routeService.generateRoute(request)));
+	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<RouteResponse> findById(@PathVariable Long id) {
