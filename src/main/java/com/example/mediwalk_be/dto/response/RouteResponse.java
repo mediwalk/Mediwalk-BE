@@ -5,6 +5,7 @@ import com.example.mediwalk_be.entity.enums.ActivityLevel;
 import com.example.mediwalk_be.entity.enums.SlopeLevel;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record RouteResponse(
 	Long id,
@@ -24,12 +25,17 @@ public record RouteResponse(
 	Boolean isPedestrianOnly,
 	Boolean isNatureFriendly,
 	Boolean hasRestPoints,
+	List<PointOfInterestResponse> restPoints,
 	LocalDateTime generatedAt,
 	LocalDateTime completedAt,
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
 ) {
 	public static RouteResponse from(Route e) {
+		return from(e, null);
+	}
+
+	public static RouteResponse from(Route e, List<PointOfInterestResponse> restPoints) {
 		return new RouteResponse(
 			e.getId(),
 			e.getUser().getId(),
@@ -48,6 +54,7 @@ public record RouteResponse(
 			e.getIsPedestrianOnly(),
 			e.getIsNatureFriendly(),
 			e.getHasRestPoints(),
+			restPoints != null ? restPoints : List.of(),
 			e.getGeneratedAt(),
 			e.getCompletedAt(),
 			e.getCreatedAt(),

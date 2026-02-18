@@ -4,11 +4,13 @@ import com.example.mediwalk_be.client.AiRouteClient;
 import com.example.mediwalk_be.dto.request.CreateRouteRequest;
 import com.example.mediwalk_be.dto.request.RouteGenerationRequest;
 import com.example.mediwalk_be.dto.response.AiRouteGenerationResponse;
+import com.example.mediwalk_be.dto.response.PointOfInterestResponse;
 import com.example.mediwalk_be.entity.CollectionLocation;
 import com.example.mediwalk_be.entity.Route;
 import com.example.mediwalk_be.entity.User;
 import com.example.mediwalk_be.entity.UserDailyMission;
 import com.example.mediwalk_be.repository.CollectionLocationRepository;
+import com.example.mediwalk_be.repository.PointOfInterestRepository;
 import com.example.mediwalk_be.repository.RouteRepository;
 import com.example.mediwalk_be.repository.UserDailyMissionRepository;
 import com.example.mediwalk_be.repository.UserRepository;
@@ -30,6 +32,7 @@ public class RouteService {
 	private final UserRepository userRepository;
 	private final UserDailyMissionRepository userDailyMissionRepository;
 	private final CollectionLocationRepository collectionLocationRepository;
+	private final PointOfInterestRepository pointOfInterestRepository;
 	private final AiRouteClient aiRouteClient;
 
 	public Optional<Route> findById(Long id) {
@@ -112,5 +115,14 @@ public class RouteService {
 				Boolean.TRUE.equals(aiResponse.isNatureFriendly()),
 				Boolean.TRUE.equals(aiResponse.hasRestPoints()));
 		return create(createRequest);
+	}
+
+	/**
+	 * 경로의 휴식 포인트(POI) 목록 조회
+	 */
+	public List<PointOfInterestResponse> getRestPointsByRouteId(Long routeId) {
+		return pointOfInterestRepository.findByRouteIdOrderByOrderAsc(routeId).stream()
+				.map(PointOfInterestResponse::from)
+				.toList();
 	}
 }

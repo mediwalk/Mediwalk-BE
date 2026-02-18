@@ -6,6 +6,7 @@ import com.example.mediwalk_be.repository.CollectionLocationRepository;
 import com.example.mediwalk_be.repository.MissionRepository;
 import com.example.mediwalk_be.repository.UserDailyMissionRepository;
 import com.example.mediwalk_be.repository.UserRepository;
+import com.example.mediwalk_be.util.DistanceUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -68,8 +69,41 @@ public class UserDailyMissionService {
 	}
 
 	@Transactional
-	public UserDailyMission complete(Long id, Integer earnedReward) {
+	public UserDailyMission complete(Long id, Integer earnedReward, Double currentLatitude, Double currentLongitude) {
 		UserDailyMission udm = getById(id);
+		
+		// 목적지(수거함 위치)가 있는 경우 20m 반경 검증
+		if (udm.getCollectionLocation() != null) {
+			if (currentLatitude == null || currentLongitude == null) {
+				throw new IllegalArgumentException("미션 완료를 위해 현재 위치 정보가 필요합니다.");
+			}
+			
+			CollectionLocation destination = udm.getCollectionLocation();
+			int activationRadius = destination.getActivationRadius() != null 
+					? destination.getActivationRadius() 
+					: 20; // 기본값 20m
+			
+			boolean isWithinRadius = DistanceUtil.isWithinRadius(
+					currentLatitude,
+					currentLongitude,
+					destination.getLatitude(),
+					destination.getLongitude(),
+					activationRadius
+			);
+			
+			if (!isWithinRadius) {
+				double distance = DistanceUtil.calculateDistanceMeters(
+						currentLatitude,
+						currentLongitude,
+						destination.getLatitude(),
+						destination.getLongitude()
+				);
+				throw new IllegalArgumentException(
+						String.format("목적지로부터 %d미터 이내에 있어야 합니다. 현재 거리: %.1f미터", activationRadius, distance)
+				);
+			}
+		}
+		
 		udm.complete(LocalDateTime.now(), earnedReward);
 		return userDailyMissionRepository.save(udm);
 	}

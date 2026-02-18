@@ -9,6 +9,7 @@ import com.example.mediwalk_be.repository.EventRepository;
 import com.example.mediwalk_be.repository.RouteRepository;
 import com.example.mediwalk_be.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.repository.UserRepository;
+import com.example.mediwalk_be.util.DistanceUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -66,6 +67,33 @@ public class EventService {
 		Route route = request.routeId() != null
 				? routeRepository.findById(request.routeId()).orElse(null)
 				: null;
+
+		// 운동 경로 인증 또는 폐의약품 수거 인증 시 20m 반경 검증
+		if (collectionLocation != null && request.currentLatitude() != null && request.currentLongitude() != null) {
+			int activationRadius = collectionLocation.getActivationRadius() != null 
+					? collectionLocation.getActivationRadius() 
+					: 20;
+			
+			boolean isWithinRadius = DistanceUtil.isWithinRadius(
+					request.currentLatitude(),
+					request.currentLongitude(),
+					collectionLocation.getLatitude(),
+					collectionLocation.getLongitude(),
+					activationRadius
+			);
+			
+			if (!isWithinRadius) {
+				double distance = DistanceUtil.calculateDistanceMeters(
+						request.currentLatitude(),
+						request.currentLongitude(),
+						collectionLocation.getLatitude(),
+						collectionLocation.getLongitude()
+				);
+				throw new IllegalArgumentException(
+						String.format("목적지로부터 %d미터 이내에 있어야 합니다. 현재 거리: %.1f미터", activationRadius, distance)
+				);
+			}
+		}
 
 		int rewardAmount = request.rewardAmount() != null ? request.rewardAmount() : 0;
 

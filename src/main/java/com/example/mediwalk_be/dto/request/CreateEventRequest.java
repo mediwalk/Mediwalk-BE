@@ -13,6 +13,8 @@ public record CreateEventRequest(
 	String locationName,
 	Long collectionLocationId,
 	String imageUrl,
-	Long routeId
+	Long routeId,
+	Double currentLatitude,
+	Double currentLongitude
 ) {
 }

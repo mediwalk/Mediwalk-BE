@@ -52,7 +52,12 @@ public class UserDailyMissionController {
 			@PathVariable Long id,
 			@RequestBody CompleteUserDailyMissionRequest request) {
 		Integer reward = request.earnedReward() != null ? request.earnedReward() : 0;
-		var updated = userDailyMissionService.complete(id, reward);
+		var updated = userDailyMissionService.complete(
+				id, 
+				reward, 
+				request.currentLatitude(), 
+				request.currentLongitude()
+		);
 		return ResponseEntity.ok(UserDailyMissionResponse.from(updated));
 	}
 
