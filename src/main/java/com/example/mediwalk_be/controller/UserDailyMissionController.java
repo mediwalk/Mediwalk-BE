@@ -20,9 +20,12 @@ public class UserDailyMissionController {
 	private final UserDailyMissionService userDailyMissionService;
 
 	@GetMapping("/{id}")
-	public ResponseEntity<UserDailyMissionResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<UserDailyMissionResponse> findById(
+			@PathVariable Long id,
+			@RequestParam(required = false) Double currentLatitude,
+			@RequestParam(required = false) Double currentLongitude) {
 		return userDailyMissionService.findById(id)
-				.map(UserDailyMissionResponse::from)
+				.map(mission -> UserDailyMissionResponse.from(mission, currentLatitude, currentLongitude))
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
