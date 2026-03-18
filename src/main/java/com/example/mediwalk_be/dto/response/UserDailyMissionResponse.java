@@ -15,17 +15,16 @@ public record UserDailyMissionResponse(
 	MissionStatus status,
 	LocalDateTime completedAt,
 	Integer earnedReward,
-	/** 미션 제목 */
 	String missionTitle,
-	/** 미션 설명 */
 	String missionDescription,
-	/** 목적지까지의 거리 (미터) - 9번: 현재 위치가 제공된 경우에만 값이 있음 */
 	Integer distanceMeters,
-	/** 목적지까지의 도보 거리 (미터) - 9번: 현재 위치가 제공된 경우에만 값이 있음 */
 	Integer walkingDistanceMeters,
+	Integer estimatedWalkTimeMinutes,
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
 ) {
+	private static final double DEFAULT_WALK_SPEED_METERS_PER_MINUTE = 80.0; // 약 4.8km/h
+
 	public static UserDailyMissionResponse from(UserDailyMission e) {
 		return from(e, null, null);
 	}
@@ -35,9 +34,10 @@ public record UserDailyMissionResponse(
 		String missionTitle = e.getMission().getTitle();
 		String missionDescription = e.getMission().getDescription();
 
-		// 거리 계산 (9번: 현재 위치가 제공되고 목적지가 있는 경우)
+		// 거리 계산
 		Integer distanceMeters = null;
 		Integer walkingDistanceMeters = null;
+		Integer estimatedWalkTimeMinutes = null;
 		if (currentLatitude != null && currentLongitude != null && e.getCollectionLocation() != null) {
 			double distance = com.example.mediwalk_be.util.DistanceUtil.calculateDistanceMeters(
 					currentLatitude,
@@ -47,6 +47,7 @@ public record UserDailyMissionResponse(
 			);
 			distanceMeters = (int) Math.round(distance);
 			walkingDistanceMeters = distanceMeters;
+			estimatedWalkTimeMinutes = Math.max(1, (int) Math.round(walkingDistanceMeters / DEFAULT_WALK_SPEED_METERS_PER_MINUTE));
 		}
 
 		return new UserDailyMissionResponse(
@@ -62,6 +63,7 @@ public record UserDailyMissionResponse(
 			missionDescription,
 			distanceMeters,
 			walkingDistanceMeters,
+			estimatedWalkTimeMinutes,
 			e.getCreatedAt(),
 			e.getUpdatedAt()
 		);

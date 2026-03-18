@@ -14,15 +14,17 @@ public record CollectionLocationWithDistanceResponse(
 	CollectionLocationType type,
 	Integer baseRewardAmount,
 	Integer activationRadius,
-	// 현재 위치로부터의 거리 (미터)
 	Integer distanceMeters,
-	// 도보 거리 (미터)
 	Integer walkingDistanceMeters,
+	// 예상 도보 시간 (분) - 현재는 직선거리 기반 추정
+	Integer estimatedWalkTimeMinutes,
 	// 예상 걸음 수 (평균 보폭 0.7m 기준)
 	Integer estimatedSteps,
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
 ) {
+	private static final double DEFAULT_WALK_SPEED_METERS_PER_MINUTE = 80.0; // 약 4.8km/h
+
 	public static CollectionLocationWithDistanceResponse from(
 			CollectionLocation location,
 			double currentLatitude,
@@ -38,6 +40,9 @@ public record CollectionLocationWithDistanceResponse(
 		// 도보 거리는 직선 거리와 동일 (실제 도보 경로는 별도 계산 필요하지만 현재는 직선 거리 사용)
 		int walkingDistanceMeters = (int) Math.round(distanceMeters);
 		
+		// 예상 도보 시간(분) - 직선거리 기반 추정
+		int estimatedWalkTimeMinutes = Math.max(1, (int) Math.round(walkingDistanceMeters / DEFAULT_WALK_SPEED_METERS_PER_MINUTE));
+
 		// 예상 걸음 수 계산
 		int estimatedSteps = (int) Math.round(distanceMeters / 0.7);
 		
@@ -52,6 +57,7 @@ public record CollectionLocationWithDistanceResponse(
 			location.getActivationRadius(),
 			walkingDistanceMeters,
 			walkingDistanceMeters,
+			estimatedWalkTimeMinutes,
 			estimatedSteps,
 			location.getCreatedAt(),
 			location.getUpdatedAt()
