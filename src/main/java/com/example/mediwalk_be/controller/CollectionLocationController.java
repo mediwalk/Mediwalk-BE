@@ -17,8 +17,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class CollectionLocationController {
 
-	private static final int NEARBY_RADIUS_METERS = 3000; // 3km 통일
-	private static final int NEARBY_MAX_LIMIT = 20; // 최대 20개 이내 조회
+	private static final int NEARBY_RADIUS_METERS = 3000;
+	private static final int LIST_MAX_LIMIT = 20;
 
 	private final CollectionLocationService collectionLocationService;
 
@@ -35,11 +35,29 @@ public class CollectionLocationController {
 			@RequestParam double longitude,
 			@RequestParam(required = false) Integer limit) {
 		int effectiveLimit = limit != null && limit > 0
-				? Math.min(limit, NEARBY_MAX_LIMIT)
-				: NEARBY_MAX_LIMIT;
+				? Math.min(limit, LIST_MAX_LIMIT)
+				: LIST_MAX_LIMIT;
 		return collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, NEARBY_RADIUS_METERS).stream()
 				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
 				.limit(effectiveLimit)
+				.toList();
+	}
+
+	/**
+	 * 폐의약품 수거 장소 검색 (장소명·주소 부분 일치).
+	 * 응답에 현 위치 기준 거리·도보시간·걸음수 포함.
+	 */
+	@GetMapping("/search")
+	public List<CollectionLocationWithDistanceResponse> search(
+			@RequestParam String q,
+			@RequestParam double latitude,
+			@RequestParam double longitude,
+			@RequestParam(required = false) Integer limit) {
+		int effectiveLimit = limit != null && limit > 0
+				? Math.min(limit, LIST_MAX_LIMIT)
+				: LIST_MAX_LIMIT;
+		return collectionLocationService.searchByKeyword(q.trim(), effectiveLimit).stream()
+				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
 				.toList();
 	}
 
