@@ -18,6 +18,7 @@ import java.util.List;
 public class CollectionLocationController {
 
 	private static final int NEARBY_RADIUS_METERS = 3000; // 3km 통일
+	private static final int NEARBY_MAX_LIMIT = 20; // 최대 20개 이내 조회
 
 	private final CollectionLocationService collectionLocationService;
 
@@ -33,13 +34,13 @@ public class CollectionLocationController {
 			@RequestParam double latitude,
 			@RequestParam double longitude,
 			@RequestParam(required = false) Integer limit) {
-		var locations = collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, NEARBY_RADIUS_METERS).stream()
+		int effectiveLimit = limit != null && limit > 0
+				? Math.min(limit, NEARBY_MAX_LIMIT)
+				: NEARBY_MAX_LIMIT;
+		return collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, NEARBY_RADIUS_METERS).stream()
 				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
+				.limit(effectiveLimit)
 				.toList();
-		if (limit != null && limit > 0) {
-			return locations.stream().limit(limit).toList();
-		}
-		return locations;
 	}
 
 	@GetMapping("/{id}")
