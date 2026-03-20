@@ -4,6 +4,8 @@ import com.example.mediwalk_be.dto.request.CompleteUserDailyMissionRequest;
 import com.example.mediwalk_be.dto.request.CreateUserDailyMissionRequest;
 import com.example.mediwalk_be.dto.response.UserDailyMissionResponse;
 import com.example.mediwalk_be.service.UserDailyMissionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -30,12 +32,21 @@ public class UserDailyMissionController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 
+	@Operation(summary = "일일 미션 목록", description = "선택적으로 현재 위치를 전달하면 목적지까지 거리/도보시간을 계산합니다.")
 	@GetMapping(params = {"userId", "missionDate"})
 	public List<UserDailyMissionResponse> findByUserIdAndMissionDate(
 			@RequestParam Long userId,
-			@RequestParam LocalDate missionDate) {
+			@RequestParam LocalDate missionDate,
+			@RequestParam(defaultValue = "false") boolean ensureCreated,
+			@Parameter(description = "현재 위도 (선택). 목록 항목의 distanceMeters 등 계산에 사용")
+			@RequestParam(required = false) Double currentLatitude,
+			@Parameter(description = "현재 경도 (선택). 목록 항목의 distanceMeters 등 계산에 사용")
+			@RequestParam(required = false) Double currentLongitude) {
+		if (ensureCreated) {
+			userDailyMissionService.ensureTodayMissions(userId, missionDate, currentLatitude, currentLongitude);
+		}
 		return userDailyMissionService.findByUserIdAndMissionDate(userId, missionDate).stream()
-				.map(UserDailyMissionResponse::from)
+				.map(udm -> UserDailyMissionResponse.from(udm, currentLatitude, currentLongitude))
 				.toList();
 	}
 

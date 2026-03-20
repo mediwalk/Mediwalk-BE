@@ -2,12 +2,14 @@ package com.example.mediwalk_be.service;
 
 import com.example.mediwalk_be.entity.*;
 import com.example.mediwalk_be.entity.enums.MissionStatus;
+import com.example.mediwalk_be.entity.enums.MissionType;
 import com.example.mediwalk_be.repository.CollectionLocationRepository;
 import com.example.mediwalk_be.repository.MissionRepository;
 import com.example.mediwalk_be.repository.UserDailyMissionRepository;
 import com.example.mediwalk_be.repository.UserRepository;
 import com.example.mediwalk_be.util.DistanceUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +22,8 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserDailyMissionService {
+
+	private static final int NEARBY_RADIUS_METERS = 3000;
 
 	private final UserDailyMissionRepository userDailyMissionRepository;
 	private final UserRepository userRepository;
@@ -37,6 +41,79 @@ public class UserDailyMissionService {
 
 	public List<UserDailyMission> findByUserIdAndMissionDate(Long userId, LocalDate missionDate) {
 		return userDailyMissionRepository.findByUserIdAndMissionDate(userId, missionDate);
+	}
+
+	/**
+	 * 당일 최초 진입 시: {@link MissionType#WASTE_MEDICINE_COLLECTION}, {@link MissionType#EXERCISE} 미션을 각 1개씩 생성.
+	 * {@code missionDate}는 반드시 서버 기준 오늘과 같아야 함.
+	 *
+	 * @param latitude  있으면 가장 가까운 수거함을 폐의약품 미션 목적지로 사용 (3km 반경 우선)
+	 * @param longitude 위와 동일
+	 */
+	@Transactional(readOnly = false)
+	public void ensureTodayMissions(Long userId, LocalDate missionDate, Double latitude, Double longitude) {
+		if (!missionDate.equals(LocalDate.now())) {
+			throw new IllegalArgumentException("ensureCreated는 missionDate가 오늘인 경우에만 사용할 수 있습니다.");
+		}
+		userRepository.findById(userId)
+				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + userId));
+
+		List<UserDailyMission> existing = userDailyMissionRepository.findByUserIdAndMissionDate(userId, missionDate);
+		if (hasMissionType(existing, MissionType.WASTE_MEDICINE_COLLECTION)
+				&& hasMissionType(existing, MissionType.EXERCISE)) {
+			return;
+		}
+
+		CollectionLocation nearest = pickCollectionLocationForWasteMission(latitude, longitude);
+
+		if (!hasMissionType(existing, MissionType.WASTE_MEDICINE_COLLECTION)) {
+			Mission mission = pickMissionTemplate(MissionType.WASTE_MEDICINE_COLLECTION, userId, missionDate);
+			Long locationId = nearest != null ? nearest.getId() : null;
+			try {
+				create(userId, mission.getId(), locationId, missionDate);
+			} catch (DataIntegrityViolationException ignored) {
+				// 동시 요청 등으로 이미 생성된 경우
+			}
+			existing = userDailyMissionRepository.findByUserIdAndMissionDate(userId, missionDate);
+		}
+
+		if (!hasMissionType(existing, MissionType.EXERCISE)) {
+			Mission mission = pickMissionTemplate(MissionType.EXERCISE, userId, missionDate);
+			try {
+				create(userId, mission.getId(), null, missionDate);
+			} catch (DataIntegrityViolationException ignored) {
+				// 동시 요청 등으로 이미 생성된 경우
+			}
+		}
+	}
+
+	private boolean hasMissionType(List<UserDailyMission> list, MissionType type) {
+		return list.stream().anyMatch(udm -> udm.getMission().getMissionType() == type);
+	}
+
+	private Mission pickMissionTemplate(MissionType type, Long userId, LocalDate missionDate) {
+		List<Mission> missions = missionRepository.findByMissionType(type);
+		if (missions.isEmpty()) {
+			throw new IllegalStateException(
+					"해당 타입의 미션 템플릿이 DB에 없습니다: " + type + ". missions 테이블에 데이터를 넣어주세요.");
+		}
+		long mod = missions.size();
+		long idx = (userId + missionDate.toEpochDay()) % mod;
+		if (idx < 0) {
+			idx += mod;
+		}
+		return missions.get((int) idx);
+	}
+
+	private CollectionLocation pickCollectionLocationForWasteMission(Double latitude, Double longitude) {
+		if (latitude != null && longitude != null) {
+			List<CollectionLocation> nearby = collectionLocationRepository.findWithinRadiusOrderByDistance(
+					latitude, longitude, NEARBY_RADIUS_METERS);
+			if (!nearby.isEmpty()) {
+				return nearby.get(0);
+			}
+		}
+		return collectionLocationRepository.findAll().stream().findFirst().orElse(null);
 	}
 
 	public Optional<UserDailyMission> findByUserIdAndMissionIdAndMissionDate(Long userId, Long missionId, LocalDate missionDate) {

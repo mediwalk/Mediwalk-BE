@@ -1,7 +1,7 @@
 package com.example.mediwalk_be.service;
 
-import com.example.mediwalk_be.entity.RewardTransaction;
 import com.example.mediwalk_be.entity.User;
+import com.example.mediwalk_be.entity.enums.EventType;
 import com.example.mediwalk_be.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.repository.UserRepository;
@@ -52,23 +52,15 @@ public class UserService {
 		userRepository.deleteById(id);
 	}
 
-	// 홈 화면용: 지난 달·이번 달 적립 리워드 합계 및 지난 달 대비 증가율 계산
+	// 홈 화면용: 지난 달·이번 달 폐의약품 수거로 발생한 적립 합계 및 지난 달 대비 증가율
 	public RewardSummaryForHome getRewardSummaryForHome(Long userId) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime thisMonthStart = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 		LocalDateTime lastMonthStart = thisMonthStart.minusMonths(1);
+		LocalDateTime lastMonthEnd = thisMonthStart.minusNanos(1);
 
-		List<RewardTransaction> thisMonthList = rewardTransactionRepository.findByUserIdAndTransactionDateBetween(userId, thisMonthStart, now);
-		List<RewardTransaction> lastMonthList = rewardTransactionRepository.findByUserIdAndTransactionDateBetween(userId, lastMonthStart, thisMonthStart.minusNanos(1));
-
-		int thisMonthTotal = thisMonthList.stream()
-				.filter(t -> t.getTransactionType() == RewardTransactionType.ACCUMULATION && t.getAmount() != null && t.getAmount() > 0)
-				.mapToInt(RewardTransaction::getAmount)
-				.sum();
-		int lastMonthTotal = lastMonthList.stream()
-				.filter(t -> t.getTransactionType() == RewardTransactionType.ACCUMULATION && t.getAmount() != null && t.getAmount() > 0)
-				.mapToInt(RewardTransaction::getAmount)
-				.sum();
+		int thisMonthTotal = sumMedicineCollectionAccumulation(userId, thisMonthStart, now);
+		int lastMonthTotal = sumMedicineCollectionAccumulation(userId, lastMonthStart, lastMonthEnd);
 
 		Double increaseRate = null;
 		if (lastMonthTotal > 0) {
@@ -79,6 +71,17 @@ public class UserService {
 		}
 
 		return new RewardSummaryForHome(lastMonthTotal, thisMonthTotal, increaseRate);
+	}
+
+	private int sumMedicineCollectionAccumulation(Long userId, LocalDateTime start, LocalDateTime end) {
+		Long sum = rewardTransactionRepository.sumAccumulatedAmountByUserIdAndMedicineCollectionBetween(
+				userId,
+				start,
+				end,
+				RewardTransactionType.ACCUMULATION,
+				EventType.MEDICINE_COLLECTION
+		);
+		return sum != null ? Math.toIntExact(sum) : 0;
 	}
 
 	public record RewardSummaryForHome(int lastMonthRewardTotal, int thisMonthRewardTotal, Double rewardIncreaseRateComparedToLastMonth) {}
