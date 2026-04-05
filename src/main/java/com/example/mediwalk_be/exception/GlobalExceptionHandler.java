@@ -1,6 +1,6 @@
 package com.example.mediwalk_be.exception;
 
-import com.example.mediwalk_be.dto.response.ErrorResponse;
+import com.example.mediwalk_be.domain.common.dto.response.ErrorResponse;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
