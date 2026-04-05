@@ -34,6 +34,10 @@ public class UserService {
 		return userRepository.findByEmail(email);
 	}
 
+	public Optional<User> findByFirebaseUid(String firebaseUid) {
+		return userRepository.findByFirebaseUid(firebaseUid);
+	}
+
 	public boolean existsByEmail(String email) {
 		return userRepository.existsByEmail(email);
 	}
