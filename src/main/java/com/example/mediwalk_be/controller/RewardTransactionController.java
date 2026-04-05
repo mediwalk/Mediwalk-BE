@@ -1,9 +1,11 @@
 package com.example.mediwalk_be.controller;
 
+import com.example.mediwalk_be.dto.request.CreateRewardTransactionRequest;
 import com.example.mediwalk_be.dto.response.RewardTransactionResponse;
 import com.example.mediwalk_be.service.RewardTransactionService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +17,12 @@ import java.util.List;
 public class RewardTransactionController {
 
 	private final RewardTransactionService rewardTransactionService;
+
+	@PostMapping
+	public ResponseEntity<RewardTransactionResponse> create(@RequestBody CreateRewardTransactionRequest request) {
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(RewardTransactionResponse.from(rewardTransactionService.create(request)));
+	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<RewardTransactionResponse> findById(@PathVariable Long id) {

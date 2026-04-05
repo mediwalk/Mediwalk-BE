@@ -1,9 +1,11 @@
 package com.example.mediwalk_be.controller;
 
+import com.example.mediwalk_be.dto.request.CreateEventRequest;
 import com.example.mediwalk_be.dto.response.EventResponse;
 import com.example.mediwalk_be.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,6 +17,12 @@ import java.util.List;
 public class EventController {
 
 	private final EventService eventService;
+
+	@PostMapping
+	public ResponseEntity<EventResponse> create(@RequestBody CreateEventRequest request) {
+		return ResponseEntity.status(HttpStatus.CREATED)
+				.body(EventResponse.from(eventService.create(request)));
+	}
 
 	@GetMapping("/{id}")
 	public ResponseEntity<EventResponse> findById(@PathVariable Long id) {

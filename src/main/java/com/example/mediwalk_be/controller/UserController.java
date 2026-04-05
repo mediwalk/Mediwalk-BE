@@ -28,7 +28,15 @@ public class UserController {
 	@GetMapping("/{id}")
 	public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
 		return userService.findById(id)
-				.map(UserResponse::from)
+				.map(user -> {
+					var summary = userService.getRewardSummaryForHome(id);
+					return UserResponse.from(
+							user,
+							summary.lastMonthRewardTotal(),
+							summary.thisMonthRewardTotal(),
+							summary.rewardIncreaseRateComparedToLastMonth()
+					);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
