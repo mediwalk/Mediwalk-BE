@@ -14,6 +14,8 @@ import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
 @Configuration
 @EnableConfigurationProperties(FirebaseProperties.class)
@@ -44,6 +46,19 @@ public class FirebaseAdminConfig {
 				return GoogleCredentials.fromStream(in);
 			}
 		}
-		return GoogleCredentials.getApplicationDefault();
+		if (StringUtils.hasText(firebaseProperties.getCredentialsPath())) {
+			Path path = Path.of(firebaseProperties.getCredentialsPath().trim());
+			try (InputStream in = Files.newInputStream(path)) {
+				return GoogleCredentials.fromStream(in);
+			}
+		}
+		try {
+			return GoogleCredentials.getApplicationDefault();
+		} catch (IOException e) {
+			throw new IOException(
+					"Firebase 자격 증명이 없습니다. firebase.credentials-path, firebase.credentials-resource 중 하나를 설정하거나 "
+							+ "환경 변수 GOOGLE_APPLICATION_CREDENTIALS 에 서비스 계정 JSON 경로를 지정하세요.",
+					e);
+		}
 	}
 }

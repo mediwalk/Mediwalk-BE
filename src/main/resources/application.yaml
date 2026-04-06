@@ -6,6 +6,9 @@ spring:
   application:
     name: mediwalk-be
 
+  config:
+    import: optional:classpath:application-local.yaml
+
   datasource:
     url: jdbc:mysql://localhost:3306/mediwalk?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul
     username: root

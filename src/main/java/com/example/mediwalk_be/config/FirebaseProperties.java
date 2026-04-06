@@ -13,6 +13,11 @@ public class FirebaseProperties {
 
 	private String projectId;
 
-	/** 예: classpath:firebase-adminsdk.json — 비우면 GOOGLE_APPLICATION_CREDENTIALS / ADC */
 	private String credentialsResource;
+
+	/**
+	 * 서비스 계정 JSON 절대 경로 (로컬 전용). {@code application-local.yaml} 권장.
+	 * 예: /Users/me/keys/firebase-adminsdk.json
+	 */
+	private String credentialsPath;
 }

@@ -3,12 +3,10 @@ package com.example.mediwalk_be.domain.auth.controller;
 import com.example.mediwalk_be.domain.auth.dto.request.GoogleLoginRequest;
 import com.example.mediwalk_be.domain.auth.dto.response.AuthLoginResponse;
 import com.example.mediwalk_be.domain.auth.service.AuthService;
-import com.google.firebase.FirebaseApp;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnBean;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -18,8 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/api/auth")
 @RequiredArgsConstructor
-@ConditionalOnBean(FirebaseApp.class)
-@Tag(name = "Auth", description = "Firebase Google 로그인 (온보딩 화면 연동)")
+@Tag(name = "Auth", description = "Firebase Google 로그인 (온보딩 화면 연동). Firebase 미설정 시 503.")
 public class AuthController {
 
 	private final AuthService authService;
