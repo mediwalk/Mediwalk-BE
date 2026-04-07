@@ -7,6 +7,7 @@ import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
 import com.example.mediwalk_be.domain.mission.entity.UserAchievement;
 import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
+import com.example.mediwalk_be.domain.mission.service.UserAchievementService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
