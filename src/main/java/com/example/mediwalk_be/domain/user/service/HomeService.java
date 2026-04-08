@@ -5,8 +5,6 @@ import com.example.mediwalk_be.domain.user.dto.response.HomeRewardTransactionRes
 import com.example.mediwalk_be.domain.user.dto.response.HomeResponse;
 import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
 import com.example.mediwalk_be.domain.mission.entity.UserAchievement;
-import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
-import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.mission.service.UserAchievementService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import lombok.RequiredArgsConstructor;
@@ -37,23 +35,9 @@ public class HomeService {
 		// 상단 리워드 카드(지난달/이번달 합계, 증가율)
 		var rewardSummary = userService.getRewardSummaryForHome(userId);
 
-		// 이번달 "수거 수"(= MEDICINE_COLLECTION 이벤트로 발생한 적립 ACCUMULATION 건수)
+		// 누적 수거 수 (사용자 누적 집계값 사용)
 		LocalDateTime now = LocalDateTime.now();
-		LocalDateTime thisMonthStart = now
-				.withDayOfMonth(1)
-				.withHour(0)
-				.withMinute(0)
-				.withSecond(0)
-				.withNano(0);
-
-		Long collectionsCount = rewardTransactionRepository.countAccumulatedEventsByUserIdAndMedicineCollectionBetween(
-				userId,
-				thisMonthStart,
-				now,
-				RewardTransactionType.ACCUMULATION,
-				EventType.MEDICINE_COLLECTION
-		);
-		int thisMonthCollectionsCount = collectionsCount != null ? collectionsCount.intValue() : 0;
+		int totalCollectionsCount = userService.getById(userId).getTotalCollectionsCount();
 
 		// 달성 목표 리스트
 		List<UserAchievement> userAchievements = userAchievementService.findByUserId(userId);
@@ -78,7 +62,7 @@ public class HomeService {
 				rewardSummary.lastMonthRewardTotal(),
 				rewardSummary.thisMonthRewardTotal(),
 				rewardSummary.rewardIncreaseRateComparedToLastMonth(),
-				thisMonthCollectionsCount,
+				totalCollectionsCount,
 				achievements,
 				recentRewardTransactions,
 				now
