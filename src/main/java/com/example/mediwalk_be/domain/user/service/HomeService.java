@@ -74,34 +74,34 @@ public class HomeService {
 			boolean aAchieved = Boolean.TRUE.equals(a.getIsAchieved());
 			boolean bAchieved = Boolean.TRUE.equals(b.getIsAchieved());
 
-			// 미달성 먼저
+			// 달성 먼저
 			if (aAchieved != bAchieved) {
-				return Boolean.compare(aAchieved, bAchieved);
-			}
-
-			// 둘 다 미달성: 진행도 큰 순
-			if (!aAchieved) {
-				int progressCmp = Integer.compare(b.getCurrentProgress(), a.getCurrentProgress());
-				if (progressCmp != 0) {
-					return progressCmp;
-				}
-				// 동일 진행도: 최근 업데이트/생성 순
-				return b.getUpdatedAt().compareTo(a.getUpdatedAt());
+				return Boolean.compare(bAchieved, aAchieved);
 			}
 
 			// 둘 다 달성: 달성일 최신 순(없으면 뒤)
-			var aDate = a.getAchievedDate();
-			var bDate = b.getAchievedDate();
-			if (aDate == null && bDate == null) {
-				return 0;
+			if (aAchieved) {
+				var aDate = a.getAchievedDate();
+				var bDate = b.getAchievedDate();
+				if (aDate == null && bDate == null) {
+					return 0;
+				}
+				if (aDate == null) {
+					return 1;
+				}
+				if (bDate == null) {
+					return -1;
+				}
+				return bDate.compareTo(aDate);
 			}
-			if (aDate == null) {
-				return 1;
+
+			// 둘 다 미달성: 진행도 큰 순
+			int progressCmp = Integer.compare(b.getCurrentProgress(), a.getCurrentProgress());
+			if (progressCmp != 0) {
+				return progressCmp;
 			}
-			if (bDate == null) {
-				return -1;
-			}
-			return bDate.compareTo(aDate);
+			// 동일 진행도: 최근 업데이트/생성 순
+			return b.getUpdatedAt().compareTo(a.getUpdatedAt());
 		};
 	}
 }
