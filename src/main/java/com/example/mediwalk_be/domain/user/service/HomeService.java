@@ -28,16 +28,18 @@ public class HomeService {
 	private final RewardTransactionRepository rewardTransactionRepository;
 
 	public Optional<HomeResponse> getHome(Long userId, int achievementsLimit, int recentTransactionsSize) {
-		if (userService.findById(userId).isEmpty()) {
+		var userOpt = userService.findById(userId);
+		if (userOpt.isEmpty()) {
 			return Optional.empty();
 		}
+		var user = userOpt.get();
 
 		// 상단 리워드 카드(지난달/이번달 합계, 증가율)
 		var rewardSummary = userService.getRewardSummaryForHome(userId);
 
 		// 누적 수거 수 (사용자 누적 집계값 사용)
 		LocalDateTime now = LocalDateTime.now();
-		int totalCollectionsCount = userService.getById(userId).getTotalCollectionsCount();
+		int totalCollectionsCount = user.getTotalCollectionsCount();
 
 		// 달성 목표 리스트
 		List<UserAchievement> userAchievements = userAchievementService.findByUserId(userId);
@@ -61,6 +63,7 @@ public class HomeService {
 				userId,
 				rewardSummary.lastMonthRewardTotal(),
 				rewardSummary.thisMonthRewardTotal(),
+				user.getTotalAccumulatedReward(),
 				rewardSummary.rewardIncreaseRateComparedToLastMonth(),
 				totalCollectionsCount,
 				achievements,

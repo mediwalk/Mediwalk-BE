@@ -52,6 +52,13 @@ public class RewardTransactionService {
 				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + request.userId()));
 
 		if (request.transactionType() == RewardTransactionType.REFUND) {
+			if (request.bankName() == null || request.bankName().isBlank()) {
+				throw new IllegalArgumentException("환급 시 은행명은 필수입니다.");
+			}
+			if (request.accountNumberMasked() == null || request.accountNumberMasked().isBlank()) {
+				throw new IllegalArgumentException("환급 시 계좌번호는 필수입니다.");
+			}
+
 			int refundAmount = request.amount() != null ? request.amount() : 0;
 			if (refundAmount > 0) {
 				refundAmount = -refundAmount;
@@ -59,7 +66,8 @@ public class RewardTransactionService {
 			if (refundAmount > -10_000) {
 				throw new IllegalArgumentException("환급 최소 금액은 10,000원입니다.");
 			}
-			if (user.getTotalAccumulatedReward() + refundAmount < 0) {
+			int currentTotalReward = user.getTotalAccumulatedReward() != null ? user.getTotalAccumulatedReward() : 0;
+			if (currentTotalReward + refundAmount < 0) {
 				throw new IllegalArgumentException("잔액이 부족합니다.");
 			}
 			user.addAccumulatedReward(refundAmount);
