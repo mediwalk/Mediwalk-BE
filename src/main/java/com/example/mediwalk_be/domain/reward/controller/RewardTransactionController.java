@@ -4,11 +4,13 @@ import com.example.mediwalk_be.domain.reward.dto.request.CreateRewardTransaction
 import com.example.mediwalk_be.domain.reward.dto.response.RewardTransactionResponse;
 import com.example.mediwalk_be.domain.reward.service.RewardTransactionService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -35,9 +37,12 @@ public class RewardTransactionController {
 	@GetMapping(params = "userId")
 	public List<RewardTransactionResponse> findByUserId(
 			@RequestParam Long userId,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return rewardTransactionService.findByUserIdOrderByTransactionDateDesc(userId, PageRequest.of(page, size)).stream()
+		return rewardTransactionService
+				.findByUserIdWithOptionalPeriod(userId, startDateTime, endDateTime, PageRequest.of(page, size)).stream()
 				.map(RewardTransactionResponse::from)
 				.toList();
 	}

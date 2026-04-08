@@ -17,6 +17,13 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
 
 	List<RewardTransaction> findByUserIdAndTransactionDateBetween(Long userId, LocalDateTime start, LocalDateTime end);
 
+	List<RewardTransaction> findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
+			Long userId,
+			LocalDateTime start,
+			LocalDateTime end,
+			Pageable pageable
+	);
+
 	// 폐의약품 수거 이벤트로 발생한 적립(ACCUMULATION)만 합산. event 없는 적립은 제외
 	@Query("""
 			SELECT COALESCE(SUM(rt.amount), 0) FROM RewardTransaction rt

@@ -47,6 +47,13 @@ public class EventService {
 		return eventRepository.findByUserIdOrderByEventDateTimeDesc(userId, pageable);
 	}
 
+	public List<Event> findByUserIdWithOptionalEventType(Long userId, EventType eventType, Pageable pageable) {
+		if (eventType != null) {
+			return eventRepository.findByUserIdAndEventTypeOrderByEventDateTimeDesc(userId, eventType, pageable);
+		}
+		return eventRepository.findByUserIdOrderByEventDateTimeDesc(userId, pageable);
+	}
+
 	public List<Event> findByUserIdAndEventDateTimeBetween(Long userId, LocalDateTime start, LocalDateTime end) {
 		return eventRepository.findByUserIdAndEventDateTimeBetween(userId, start, end);
 	}

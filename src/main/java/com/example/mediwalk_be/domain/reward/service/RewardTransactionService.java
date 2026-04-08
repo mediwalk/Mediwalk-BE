@@ -40,6 +40,33 @@ public class RewardTransactionService {
 		return rewardTransactionRepository.findByUserIdAndTransactionDateBetween(userId, start, end);
 	}
 
+	public List<RewardTransaction> findByUserIdWithOptionalPeriod(
+			Long userId,
+			LocalDateTime startDateTime,
+			LocalDateTime endDateTime,
+			Pageable pageable
+	) {
+		LocalDateTime start = startDateTime;
+		LocalDateTime end = endDateTime;
+		boolean hasStart = start != null;
+		boolean hasEnd = end != null;
+		if (hasStart != hasEnd) {
+			throw new IllegalArgumentException("기간 필터는 startDateTime, endDateTime을 함께 전달해야 합니다.");
+		}
+		if (hasStart && start != null && end != null && start.isAfter(end)) {
+			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
+		}
+		if (hasStart) {
+			return rewardTransactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
+					userId,
+					start,
+					end,
+					pageable
+			);
+		}
+		return rewardTransactionRepository.findByUserIdOrderByTransactionDateDesc(userId, pageable);
+	}
+
 	@Transactional
 	public RewardTransaction save(RewardTransaction rewardTransaction) {
 		return rewardTransactionRepository.save(rewardTransaction);

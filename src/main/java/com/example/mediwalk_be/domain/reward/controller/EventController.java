@@ -2,6 +2,7 @@ package com.example.mediwalk_be.domain.reward.controller;
 
 import com.example.mediwalk_be.domain.reward.dto.request.CreateEventRequest;
 import com.example.mediwalk_be.domain.reward.dto.response.EventResponse;
+import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.reward.service.EventService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -35,9 +36,10 @@ public class EventController {
 	@GetMapping(params = "userId")
 	public List<EventResponse> findByUserId(
 			@RequestParam Long userId,
+			@RequestParam(required = false) EventType eventType,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return eventService.findByUserIdOrderByEventDateTimeDesc(userId, PageRequest.of(page, size)).stream()
+		return eventService.findByUserIdWithOptionalEventType(userId, eventType, PageRequest.of(page, size)).stream()
 				.map(EventResponse::from)
 				.toList();
 	}
