@@ -69,6 +69,10 @@ public class User extends BaseEntity {
 	@Column(unique = true, length = 128)
 	private String firebaseUid;
 
+	/** Google 등 OAuth 프로필 이미지 URL (마이페이지). 없으면 클라이언트 기본 이미지 */
+	@Column(length = 1024)
+	private String profileImageUrl;
+
 	/** 리워드 적립/환급 반영 (양수: 적립, 음수: 환급) */
 	public void addAccumulatedReward(int amount) {
 		this.totalAccumulatedReward = Math.max(0, this.totalAccumulatedReward + amount);
@@ -88,5 +92,12 @@ public class User extends BaseEntity {
 			throw new IllegalStateException("Firebase uid already set for user id=" + this.id);
 		}
 		this.firebaseUid = uid;
+	}
+
+	public void updateProfileImageUrl(String url) {
+		if (url == null || url.isBlank()) {
+			return;
+		}
+		this.profileImageUrl = url.trim();
 	}
 }
