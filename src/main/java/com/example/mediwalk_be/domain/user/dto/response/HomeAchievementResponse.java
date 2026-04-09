@@ -1,6 +1,7 @@
 package com.example.mediwalk_be.domain.user.dto.response;
 
 import com.example.mediwalk_be.domain.mission.entity.UserAchievement;
+import com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory;
 
 import java.time.LocalDateTime;
 
@@ -8,6 +9,8 @@ public record HomeAchievementResponse(
 	Long userAchievementId,
 	Long achievementId,
 	String achievementName,
+	String achievementDescription,
+	AchievementCategory achievementCategory,
 	Integer currentProgress,
 	Integer targetValue,
 	String unit,
@@ -29,6 +32,8 @@ public record HomeAchievementResponse(
 				e.getId(),
 				e.getAchievement().getId(),
 				e.getAchievement().getName(),
+				e.getAchievement().getDescription(),
+				e.getAchievement().getCategory(),
 				e.getCurrentProgress(),
 				e.getAchievement().getTargetValue(),
 				e.getAchievement().getUnit(),

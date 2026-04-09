@@ -3,6 +3,8 @@ package com.example.mediwalk_be.domain.reward.controller;
 import com.example.mediwalk_be.domain.reward.dto.request.CreateRewardTransactionRequest;
 import com.example.mediwalk_be.domain.reward.dto.response.RewardTransactionResponse;
 import com.example.mediwalk_be.domain.reward.service.RewardTransactionService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.data.domain.PageRequest;
@@ -16,25 +18,29 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/reward-transactions")
 @RequiredArgsConstructor
+@Tag(name = "Reward", description = "리워드 거래(적립/환급) 조회 및 생성 API")
 public class RewardTransactionController {
 
 	private final RewardTransactionService rewardTransactionService;
 
 	@PostMapping
+	@Operation(summary = "리워드 거래 생성", description = "리워드 적립/환급 거래를 생성합니다. 환급 시 최소 금액 및 계좌 정보 검증이 적용됩니다.")
 	public ResponseEntity<RewardTransactionResponse> create(@RequestBody CreateRewardTransactionRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(RewardTransactionResponse.from(rewardTransactionService.create(request)));
 	}
 
 	@GetMapping("/{id}")
+	@Operation(summary = "리워드 거래 단건 조회", description = "거래 ID로 리워드 거래 상세 정보를 조회합니다. 연결된 이벤트가 있으면 제목·장소·유형 및 적립 완료 여부가 포함됩니다.")
 	public ResponseEntity<RewardTransactionResponse> findById(@PathVariable Long id) {
-		return rewardTransactionService.findById(id)
+		return rewardTransactionService.findByIdWithEvent(id)
 				.map(RewardTransactionResponse::from)
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
 
 	@GetMapping(params = "userId")
+	@Operation(summary = "리워드 거래 목록 조회", description = "사용자 리워드 거래 목록을 최신순으로 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 필터링됩니다. 적립 건은 eventTitle·locationName·eventType으로 표기하고, accumulationCompleted는 폐의약품 수거(MEDICINE_COLLECTION) 적립 완료 뱃지용입니다.")
 	public List<RewardTransactionResponse> findByUserId(
 			@RequestParam Long userId,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
@@ -48,6 +54,7 @@ public class RewardTransactionController {
 	}
 
 	@DeleteMapping("/{id}")
+	@Operation(summary = "리워드 거래 삭제", description = "거래 ID 기준으로 리워드 거래를 삭제합니다.")
 	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
 		if (rewardTransactionService.findById(id).isEmpty()) {
 			return ResponseEntity.notFound().build();

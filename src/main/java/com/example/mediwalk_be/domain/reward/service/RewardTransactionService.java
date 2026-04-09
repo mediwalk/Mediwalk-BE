@@ -27,6 +27,10 @@ public class RewardTransactionService {
 		return rewardTransactionRepository.findById(id);
 	}
 
+	public Optional<RewardTransaction> findByIdWithEvent(Long id) {
+		return rewardTransactionRepository.findByIdWithEvent(id);
+	}
+
 	public RewardTransaction getById(Long id) {
 		return rewardTransactionRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("RewardTransaction not found: id=" + id));

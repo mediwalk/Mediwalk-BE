@@ -9,7 +9,7 @@ public record HomeResponse(
 	Integer thisMonthRewardTotal,
 	Integer totalAccumulatedReward,
 	Double rewardIncreaseRateComparedToLastMonth,
-	Integer thisMonthCollectionsCount,
+	Integer totalCollectionsCount,
 	List<HomeAchievementResponse> achievements,
 	List<HomeRewardTransactionResponse> recentRewardTransactions,
 	LocalDateTime snapshotAt
