@@ -1,4 +1,4 @@
-package com.example.mediwalk_be.domain.user.dto.response;
+package com.example.mediwalk_be.domain.reward.dto.response;
 
 import com.example.mediwalk_be.domain.reward.entity.Event;
 import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
@@ -7,7 +7,7 @@ import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 
 import java.time.LocalDateTime;
 
-public record HomeRewardTransactionResponse(
+public record RewardMainTransactionResponse(
 	Long id,
 	Long userId,
 	Long eventId,
@@ -24,9 +24,9 @@ public record HomeRewardTransactionResponse(
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
 ) {
-	public static HomeRewardTransactionResponse from(RewardTransaction e) {
+	public static RewardMainTransactionResponse from(RewardTransaction e) {
 		Event event = e.getEvent();
-		return new HomeRewardTransactionResponse(
+		return new RewardMainTransactionResponse(
 				e.getId(),
 				e.getUser().getId(),
 				event != null ? event.getId() : null,
@@ -57,4 +57,3 @@ public record HomeRewardTransactionResponse(
 		return e.getEvent().getEventType() == EventType.MEDICINE_COLLECTION;
 	}
 }
-

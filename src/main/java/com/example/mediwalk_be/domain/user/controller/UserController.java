@@ -29,7 +29,7 @@ public class UserController {
 	public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
 		return userService.findById(id)
 				.map(user -> {
-					var summary = userService.getRewardSummaryForHome(id);
+					var summary = userService.getRewardMainMonthlySummary(id);
 					return UserResponse.from(
 							user,
 							summary.lastMonthRewardTotal(),

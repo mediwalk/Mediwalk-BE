@@ -55,8 +55,8 @@ public class UserService {
 		userRepository.deleteById(id);
 	}
 
-	// 홈 화면용: 지난 달·이번 달 해당 기간에 발생한 모든 적립(ACCUMULATION) 합계 및 지난 달 대비 증가율
-	public RewardSummaryForHome getRewardSummaryForHome(Long userId) {
+	// 리워드 메인용: 지난 달·이번 달 해당 기간에 발생한 모든 적립(ACCUMULATION) 합계 및 지난 달 대비 증가율
+	public RewardMainMonthlySummary getRewardMainMonthlySummary(Long userId) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime thisMonthStart = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 		LocalDateTime lastMonthStart = thisMonthStart.minusMonths(1);
@@ -73,7 +73,7 @@ public class UserService {
 			increaseRate = 100.0;
 		}
 
-		return new RewardSummaryForHome(lastMonthTotal, thisMonthTotal, increaseRate);
+		return new RewardMainMonthlySummary(lastMonthTotal, thisMonthTotal, increaseRate);
 	}
 
 	private int sumAccumulationInPeriod(Long userId, LocalDateTime start, LocalDateTime end) {
@@ -86,5 +86,5 @@ public class UserService {
 		return sum != null ? Math.toIntExact(sum) : 0;
 	}
 
-	public record RewardSummaryForHome(int lastMonthRewardTotal, int thisMonthRewardTotal, Double rewardIncreaseRateComparedToLastMonth) {}
+	public record RewardMainMonthlySummary(int lastMonthRewardTotal, int thisMonthRewardTotal, Double rewardIncreaseRateComparedToLastMonth) {}
 }

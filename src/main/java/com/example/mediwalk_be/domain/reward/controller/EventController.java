@@ -17,7 +17,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/events")
 @RequiredArgsConstructor
-@Tag(name = "Reward", description = "리워드 이벤트(수거/미션) 조회 및 생성 API")
+@Tag(name = "Reward", description = "리워드 도메인: 이벤트(수거·미션), 거래(적립·환급), 요약")
 public class EventController {
 
 	private final EventService eventService;
