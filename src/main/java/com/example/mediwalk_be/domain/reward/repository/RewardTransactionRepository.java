@@ -33,6 +33,20 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
 	@Query("SELECT rt FROM RewardTransaction rt WHERE rt.id = :id")
 	Optional<RewardTransaction> findByIdWithEvent(@Param("id") Long id);
 
+	// 해당 기간 내 적립(ACCUMULATION) 금액 합계 (양수 적립만, 환급 제외)
+	@Query("""
+			SELECT COALESCE(SUM(rt.amount), 0) FROM RewardTransaction rt
+			WHERE rt.user.id = :userId
+			AND rt.transactionDate >= :start AND rt.transactionDate <= :end
+			AND rt.transactionType = :transactionType
+			AND rt.amount > 0
+			""")
+	Long sumAccumulatedAmountByUserIdAndTransactionTypeBetween(
+			@Param("userId") Long userId,
+			@Param("start") LocalDateTime start,
+			@Param("end") LocalDateTime end,
+			@Param("transactionType") RewardTransactionType transactionType);
+
 	// 폐의약품 수거 이벤트로 발생한 적립(ACCUMULATION)만 합산. event 없는 적립은 제외
 	@Query("""
 			SELECT COALESCE(SUM(rt.amount), 0) FROM RewardTransaction rt

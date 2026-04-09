@@ -1,7 +1,6 @@
 package com.example.mediwalk_be.domain.user.service;
 
 import com.example.mediwalk_be.domain.user.entity.User;
-import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
@@ -56,15 +55,15 @@ public class UserService {
 		userRepository.deleteById(id);
 	}
 
-	// 홈 화면용: 지난 달·이번 달 폐의약품 수거로 발생한 적립 합계 및 지난 달 대비 증가율
+	// 홈 화면용: 지난 달·이번 달 해당 기간에 발생한 모든 적립(ACCUMULATION) 합계 및 지난 달 대비 증가율
 	public RewardSummaryForHome getRewardSummaryForHome(Long userId) {
 		LocalDateTime now = LocalDateTime.now();
 		LocalDateTime thisMonthStart = now.withDayOfMonth(1).withHour(0).withMinute(0).withSecond(0).withNano(0);
 		LocalDateTime lastMonthStart = thisMonthStart.minusMonths(1);
 		LocalDateTime lastMonthEnd = thisMonthStart.minusNanos(1);
 
-		int thisMonthTotal = sumMedicineCollectionAccumulation(userId, thisMonthStart, now);
-		int lastMonthTotal = sumMedicineCollectionAccumulation(userId, lastMonthStart, lastMonthEnd);
+		int thisMonthTotal = sumAccumulationInPeriod(userId, thisMonthStart, now);
+		int lastMonthTotal = sumAccumulationInPeriod(userId, lastMonthStart, lastMonthEnd);
 
 		Double increaseRate = null;
 		if (lastMonthTotal > 0) {
@@ -77,13 +76,12 @@ public class UserService {
 		return new RewardSummaryForHome(lastMonthTotal, thisMonthTotal, increaseRate);
 	}
 
-	private int sumMedicineCollectionAccumulation(Long userId, LocalDateTime start, LocalDateTime end) {
-		Long sum = rewardTransactionRepository.sumAccumulatedAmountByUserIdAndMedicineCollectionBetween(
+	private int sumAccumulationInPeriod(Long userId, LocalDateTime start, LocalDateTime end) {
+		Long sum = rewardTransactionRepository.sumAccumulatedAmountByUserIdAndTransactionTypeBetween(
 				userId,
 				start,
 				end,
-				RewardTransactionType.ACCUMULATION,
-				EventType.MEDICINE_COLLECTION
+				RewardTransactionType.ACCUMULATION
 		);
 		return sum != null ? Math.toIntExact(sum) : 0;
 	}
