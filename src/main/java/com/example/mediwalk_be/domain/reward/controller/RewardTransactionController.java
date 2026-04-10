@@ -1,6 +1,7 @@
 package com.example.mediwalk_be.domain.reward.controller;
 
 import com.example.mediwalk_be.domain.reward.dto.request.CreateRewardTransactionRequest;
+import com.example.mediwalk_be.domain.reward.dto.response.RewardTransactionCountResponse;
 import com.example.mediwalk_be.domain.reward.dto.response.RewardTransactionResponse;
 import com.example.mediwalk_be.domain.reward.service.RewardTransactionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -40,17 +41,28 @@ public class RewardTransactionController {
 	}
 
 	@GetMapping(params = "userId")
-	@Operation(summary = "리워드 거래 목록 조회", description = "사용자 리워드 거래 목록을 최신순으로 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 필터링됩니다. 적립 건은 eventTitle·locationName·eventType으로 표기하고, accumulationCompleted는 폐의약품 수거(MEDICINE_COLLECTION) 적립 완료 뱃지용입니다.")
+	@Operation(summary = "리워드 거래 목록 조회", description = "사용자 리워드 거래 목록을 정렬 기준(sort=latest|oldest)으로 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 필터링됩니다. 적립 건은 eventTitle·locationName·eventType으로 표기하고, accumulationCompleted는 폐의약품 수거(MEDICINE_COLLECTION) 적립 완료 뱃지용입니다.")
 	public List<RewardTransactionResponse> findByUserId(
 			@RequestParam Long userId,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime,
+			@RequestParam(defaultValue = "latest") String sort,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
 		return rewardTransactionService
-				.findByUserIdWithOptionalPeriod(userId, startDateTime, endDateTime, PageRequest.of(page, size)).stream()
+				.findByUserIdWithOptionalPeriod(userId, startDateTime, endDateTime, sort, PageRequest.of(page, size)).stream()
 				.map(RewardTransactionResponse::from)
 				.toList();
+	}
+
+	@GetMapping("/count")
+	@Operation(summary = "리워드 거래 건수 조회", description = "사용자 리워드 거래 건수를 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 건수(월별 등)를, 미전달 시 누적 건수를 반환합니다.")
+	public RewardTransactionCountResponse countByUserId(
+			@RequestParam Long userId,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime) {
+		long totalCount = rewardTransactionService.countByUserIdWithOptionalPeriod(userId, startDateTime, endDateTime);
+		return new RewardTransactionCountResponse(userId, totalCount);
 	}
 
 	@DeleteMapping("/{id}")

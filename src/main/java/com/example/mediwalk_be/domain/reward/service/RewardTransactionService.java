@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -48,7 +49,46 @@ public class RewardTransactionService {
 			Long userId,
 			LocalDateTime startDateTime,
 			LocalDateTime endDateTime,
+			String sort,
 			Pageable pageable
+	) {
+		LocalDateTime start = startDateTime;
+		LocalDateTime end = endDateTime;
+		String normalizedSort = normalizeSort(sort);
+		boolean hasStart = start != null;
+		boolean hasEnd = end != null;
+		if (hasStart != hasEnd) {
+			throw new IllegalArgumentException("기간 필터는 startDateTime, endDateTime을 함께 전달해야 합니다.");
+		}
+		if (hasStart && start != null && end != null && start.isAfter(end)) {
+			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
+		}
+		if (hasStart) {
+			if ("oldest".equals(normalizedSort)) {
+				return rewardTransactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateAsc(
+						userId,
+						start,
+						end,
+						pageable
+				);
+			}
+			return rewardTransactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
+						userId,
+						start,
+						end,
+						pageable
+				);
+		}
+		if ("oldest".equals(normalizedSort)) {
+			return rewardTransactionRepository.findByUserIdOrderByTransactionDateAsc(userId, pageable);
+		}
+		return rewardTransactionRepository.findByUserIdOrderByTransactionDateDesc(userId, pageable);
+	}
+
+	public long countByUserIdWithOptionalPeriod(
+			Long userId,
+			LocalDateTime startDateTime,
+			LocalDateTime endDateTime
 	) {
 		LocalDateTime start = startDateTime;
 		LocalDateTime end = endDateTime;
@@ -61,14 +101,20 @@ public class RewardTransactionService {
 			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
 		}
 		if (hasStart) {
-			return rewardTransactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
-					userId,
-					start,
-					end,
-					pageable
-			);
+			return rewardTransactionRepository.countByUserIdAndTransactionDateBetween(userId, start, end);
 		}
-		return rewardTransactionRepository.findByUserIdOrderByTransactionDateDesc(userId, pageable);
+		return rewardTransactionRepository.countByUserId(userId);
+	}
+
+	private String normalizeSort(String sort) {
+		if (sort == null || sort.isBlank()) {
+			return "latest";
+		}
+		String normalized = sort.toLowerCase(Locale.ROOT);
+		if (!"latest".equals(normalized) && !"oldest".equals(normalized)) {
+			throw new IllegalArgumentException("sort는 latest 또는 oldest만 허용됩니다.");
+		}
+		return normalized;
 	}
 
 	@Transactional

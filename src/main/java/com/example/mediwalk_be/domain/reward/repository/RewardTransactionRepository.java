@@ -19,6 +19,9 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
 	List<RewardTransaction> findByUserIdOrderByTransactionDateDesc(Long userId, Pageable pageable);
 
 	@EntityGraph(attributePaths = "event")
+	List<RewardTransaction> findByUserIdOrderByTransactionDateAsc(Long userId, Pageable pageable);
+
+	@EntityGraph(attributePaths = "event")
 	List<RewardTransaction> findByUserIdAndTransactionDateBetween(Long userId, LocalDateTime start, LocalDateTime end);
 
 	@EntityGraph(attributePaths = "event")
@@ -30,8 +33,20 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
 	);
 
 	@EntityGraph(attributePaths = "event")
+	List<RewardTransaction> findByUserIdAndTransactionDateBetweenOrderByTransactionDateAsc(
+			Long userId,
+			LocalDateTime start,
+			LocalDateTime end,
+			Pageable pageable
+	);
+
+	@EntityGraph(attributePaths = "event")
 	@Query("SELECT rt FROM RewardTransaction rt WHERE rt.id = :id")
 	Optional<RewardTransaction> findByIdWithEvent(@Param("id") Long id);
+
+	long countByUserId(Long userId);
+
+	long countByUserIdAndTransactionDateBetween(Long userId, LocalDateTime start, LocalDateTime end);
 
 	// 해당 기간 내 적립(ACCUMULATION) 금액 합계 (양수 적립만, 환급 제외)
 	@Query("""
