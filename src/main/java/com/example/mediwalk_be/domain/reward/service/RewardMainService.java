@@ -6,6 +6,8 @@ import com.example.mediwalk_be.domain.reward.dto.response.RewardMainAchievementR
 import com.example.mediwalk_be.domain.reward.dto.response.RewardMainResponse;
 import com.example.mediwalk_be.domain.reward.dto.response.RewardMainTransactionResponse;
 import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
+import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
+import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.service.UserService;
 import lombok.RequiredArgsConstructor;
@@ -14,7 +16,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -39,6 +44,7 @@ public class RewardMainService {
 
 		LocalDateTime now = LocalDateTime.now();
 		int totalCollectionsCount = user.getTotalCollectionsCount();
+		int yearlyMedicineCollectionCount = countYearlyMedicineCollections(userId);
 
 		List<UserAchievement> userAchievements = userAchievementService.findByUserId(userId);
 		userAchievements.sort(rewardMainAchievementSortComparator());
@@ -63,10 +69,26 @@ public class RewardMainService {
 				user.getTotalAccumulatedReward(),
 				rewardSummary.rewardIncreaseRateComparedToLastMonth(),
 				totalCollectionsCount,
+				yearlyMedicineCollectionCount,
 				achievements,
 				recentRewardTransactions,
 				now
 		));
+	}
+
+	private int countYearlyMedicineCollections(Long userId) {
+		ZoneId seoul = ZoneId.of("Asia/Seoul");
+		LocalDate todaySeoul = ZonedDateTime.now(seoul).toLocalDate();
+		LocalDateTime yearStart = todaySeoul.withDayOfYear(1).atStartOfDay();
+		LocalDateTime yearEnd = ZonedDateTime.now(seoul).toLocalDateTime();
+		Long count = rewardTransactionRepository.countAccumulatedEventsByUserIdAndMedicineCollectionBetween(
+				userId,
+				yearStart,
+				yearEnd,
+				RewardTransactionType.ACCUMULATION,
+				EventType.MEDICINE_COLLECTION
+		);
+		return count != null ? Math.toIntExact(count) : 0;
 	}
 
 	private static Comparator<UserAchievement> rewardMainAchievementSortComparator() {

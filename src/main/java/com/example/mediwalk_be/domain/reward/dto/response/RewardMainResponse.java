@@ -10,6 +10,7 @@ public record RewardMainResponse(
 	Integer totalAccumulatedReward,
 	Double rewardIncreaseRateComparedToLastMonth,
 	Integer totalCollectionsCount,
+	Integer yearlyMedicineCollectionCount,
 	List<RewardMainAchievementResponse> achievements,
 	List<RewardMainTransactionResponse> recentRewardTransactions,
 	LocalDateTime snapshotAt

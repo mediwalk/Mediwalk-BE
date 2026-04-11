@@ -56,7 +56,7 @@ public class RewardTransactionController {
 	}
 
 	@GetMapping("/count")
-	@Operation(summary = "리워드 거래 건수 조회", description = "사용자 리워드 거래 건수를 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 건수(월별 등)를, 미전달 시 누적 건수를 반환합니다.")
+	@Operation(summary = "폐의약품 수거 건수 조회", description = "사용자 폐의약품 수거 적립 건수를 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 건수(월별 등)를, 미전달 시 누적 건수를 반환합니다.")
 	public RewardTransactionCountResponse countByUserId(
 			@RequestParam Long userId,
 			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,

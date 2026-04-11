@@ -2,6 +2,7 @@ package com.example.mediwalk_be.domain.reward.service;
 
 import com.example.mediwalk_be.domain.reward.dto.request.CreateRewardTransactionRequest;
 import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
+import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
@@ -101,9 +102,21 @@ public class RewardTransactionService {
 			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
 		}
 		if (hasStart) {
-			return rewardTransactionRepository.countByUserIdAndTransactionDateBetween(userId, start, end);
+			Long count = rewardTransactionRepository.countAccumulatedEventsByUserIdAndMedicineCollectionBetween(
+					userId,
+					start,
+					end,
+					RewardTransactionType.ACCUMULATION,
+					EventType.MEDICINE_COLLECTION
+			);
+			return count != null ? count : 0L;
 		}
-		return rewardTransactionRepository.countByUserId(userId);
+		Long count = rewardTransactionRepository.countAccumulatedEventsByUserIdAndMedicineCollection(
+				userId,
+				RewardTransactionType.ACCUMULATION,
+				EventType.MEDICINE_COLLECTION
+		);
+		return count != null ? count : 0L;
 	}
 
 	private String normalizeSort(String sort) {
