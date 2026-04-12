@@ -1,5 +1,10 @@
 package com.example.mediwalk_be.domain.auth.service;
 
+import java.util.Optional;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
 import com.example.mediwalk_be.domain.auth.dto.response.AuthLoginResponse;
 import com.example.mediwalk_be.domain.user.dto.response.UserResponse;
 import com.example.mediwalk_be.domain.user.entity.User;
@@ -7,11 +12,8 @@ import com.example.mediwalk_be.domain.user.entity.enums.UserRole;
 import com.example.mediwalk_be.domain.user.entity.enums.UserStatus;
 import com.example.mediwalk_be.domain.user.service.UserService;
 import com.google.firebase.auth.FirebaseToken;
-import lombok.RequiredArgsConstructor;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 
 @Service
 @RequiredArgsConstructor
