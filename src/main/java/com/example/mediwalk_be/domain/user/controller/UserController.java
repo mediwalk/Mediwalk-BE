@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.example.mediwalk_be.domain.mission.service.UserAchievementProvisioningService;
 import com.example.mediwalk_be.domain.user.dto.request.CreateUserRequest;
 import com.example.mediwalk_be.domain.user.dto.response.UserResponse;
 import com.example.mediwalk_be.domain.user.entity.User;
@@ -25,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 public class UserController {
 
 	private final UserService userService;
+	private final UserAchievementProvisioningService userAchievementProvisioningService;
 
 	@GetMapping
 	public List<UserResponse> findAll() {
@@ -65,6 +67,7 @@ public class UserController {
 				.status(request.status() != null ? request.status() : com.example.mediwalk_be.domain.user.entity.enums.UserStatus.ACTIVE)
 				.build();
 		User saved = userService.save(user);
+		userAchievementProvisioningService.ensureDefaultAchievementsForUser(saved.getId());
 		return ResponseEntity.status(HttpStatus.CREATED).body(UserResponse.from(saved));
 	}
 

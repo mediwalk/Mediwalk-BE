@@ -1,15 +1,26 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
+import java.util.List;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+
 import com.example.mediwalk_be.domain.mission.dto.request.CreateAchievementRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.AchievementResponse;
 import com.example.mediwalk_be.domain.mission.entity.Achievement;
+import com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory;
 import com.example.mediwalk_be.domain.mission.service.AchievementService;
-import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
+import jakarta.validation.Valid;
+import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/achievements")
@@ -34,15 +45,16 @@ public class AchievementController {
 	}
 
 	@GetMapping(params = "category")
-	public List<AchievementResponse> findByCategory(@RequestParam com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory category) {
+	public List<AchievementResponse> findByCategory(@RequestParam AchievementCategory category) {
 		return achievementService.findByCategory(category).stream()
 				.map(AchievementResponse::from)
 				.toList();
 	}
 
 	@PostMapping
-	public ResponseEntity<AchievementResponse> create(@RequestBody CreateAchievementRequest request) {
+	public ResponseEntity<AchievementResponse> create(@Valid @RequestBody CreateAchievementRequest request) {
 		Achievement entity = Achievement.builder()
+				.code(request.code())
 				.name(request.name())
 				.description(request.description())
 				.category(request.category())

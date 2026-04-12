@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.example.mediwalk_be.domain.auth.dto.response.AuthLoginResponse;
+import com.example.mediwalk_be.domain.mission.service.UserAchievementProvisioningService;
 import com.example.mediwalk_be.domain.user.dto.response.UserResponse;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.user.entity.enums.UserRole;
@@ -25,6 +26,7 @@ public class AuthService {
 
 	private final FirebaseIdTokenService firebaseIdTokenService;
 	private final UserService userService;
+	private final UserAchievementProvisioningService userAchievementProvisioningService;
 
 	public AuthLoginResponse loginWithGoogleIdToken(String idToken) {
 		FirebaseToken token = firebaseIdTokenService.verify(idToken);
@@ -46,6 +48,7 @@ public class AuthService {
 
 		String pictureUrl = blankToNull(token.getPicture());
 
+		User resolved;
 		Optional<User> byUid = userService.findByFirebaseUid(uid);
 		if (byUid.isPresent()) {
 			User u = byUid.get();
@@ -53,28 +56,29 @@ public class AuthService {
 				u.updateProfileImageUrl(pictureUrl);
 				u = userService.save(u);
 			}
-			return new AuthLoginResponse(UserResponse.from(u));
+			resolved = u;
+		} else {
+			resolved = userService.findByEmail(normalizedEmail)
+					.map(u -> {
+						u.assignFirebaseUid(uid);
+						if (pictureUrl != null) {
+							u.updateProfileImageUrl(pictureUrl);
+						}
+						return userService.save(u);
+					})
+					.orElseGet(() -> userService.save(User.builder()
+							.email(normalizedEmail)
+							.password(FIREBASE_PASSWORD_PLACEHOLDER)
+							.name(nameForDb)
+							.role(UserRole.USER)
+							.status(UserStatus.ACTIVE)
+							.firebaseUid(uid)
+							.profileImageUrl(pictureUrl)
+							.build()));
 		}
 
-		User user = userService.findByEmail(normalizedEmail)
-				.map(u -> {
-					u.assignFirebaseUid(uid);
-					if (pictureUrl != null) {
-						u.updateProfileImageUrl(pictureUrl);
-					}
-					return userService.save(u);
-				})
-				.orElseGet(() -> userService.save(User.builder()
-						.email(normalizedEmail)
-						.password(FIREBASE_PASSWORD_PLACEHOLDER)
-						.name(nameForDb)
-						.role(UserRole.USER)
-						.status(UserStatus.ACTIVE)
-						.firebaseUid(uid)
-						.profileImageUrl(pictureUrl)
-						.build()));
-
-		return new AuthLoginResponse(UserResponse.from(user));
+		userAchievementProvisioningService.ensureDefaultAchievementsForUser(resolved.getId());
+		return new AuthLoginResponse(UserResponse.from(resolved));
 	}
 
 	private static String blankToNull(String s) {
