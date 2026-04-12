@@ -11,38 +11,20 @@ public record RewardMainAchievementResponse(
 	String achievementName,
 	String achievementDescription,
 	AchievementCategory achievementCategory,
-	Integer currentProgress,
-	Integer targetValue,
-	String unit,
 	Boolean isAchieved,
 	LocalDateTime achievedDate,
-	String iconType,
-	Integer progressPercent,
-	LocalDateTime createdAt,
-	LocalDateTime updatedAt
+	String iconType
 ) {
 	public static RewardMainAchievementResponse from(UserAchievement e) {
-		Integer targetValue = e.getAchievement().getTargetValue();
-		int progressPercent = 0;
-		if (targetValue != null && targetValue > 0) {
-			progressPercent = (int) Math.min(100, Math.round(((double) e.getCurrentProgress() / targetValue) * 100));
-		}
-
 		return new RewardMainAchievementResponse(
 				e.getId(),
 				e.getAchievement().getId(),
 				e.getAchievement().getName(),
 				e.getAchievement().getDescription(),
 				e.getAchievement().getCategory(),
-				e.getCurrentProgress(),
-				e.getAchievement().getTargetValue(),
-				e.getAchievement().getUnit(),
 				e.getIsAchieved(),
 				e.getAchievedDate(),
-				e.getAchievement().getIconType(),
-				progressPercent,
-				e.getCreatedAt(),
-				e.getUpdatedAt()
+				e.getAchievement().getIconType()
 		);
 	}
 }
