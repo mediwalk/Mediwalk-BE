@@ -11,6 +11,7 @@ import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
 import com.example.mediwalk_be.domain.reward.repository.EventRepository;
 import com.example.mediwalk_be.domain.walk.repository.RouteRepository;
+import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
@@ -33,6 +34,7 @@ public class EventService {
 	private final CollectionLocationRepository collectionLocationRepository;
 	private final RouteRepository routeRepository;
 	private final RewardTransactionRepository rewardTransactionRepository;
+	private final AchievementProgressService achievementProgressService;
 
 	public Optional<Event> findById(Long id) {
 		return eventRepository.findById(id);
@@ -135,6 +137,12 @@ public class EventService {
 					.description(event.getTitle())
 					.build();
 			rewardTransactionRepository.save(accumulation);
+		}
+		if (request.eventType() == EventType.MEDICINE_COLLECTION) {
+			achievementProgressService.syncEnvironmentalAchievements(user);
+		}
+		if (rewardAmount > 0) {
+			achievementProgressService.syncRewardAmountAchievements(user);
 		}
 		return event;
 	}

@@ -47,4 +47,19 @@ public class UserAchievement extends BaseEntity {
 			this.achievedDate = LocalDateTime.now();
 		}
 	}
+
+	/**
+	 * 수거 횟수·누적 리워드·걸음 합계 등 원천 지표에 맞춰 진행도를 덮어쓴다. 목표 미만이면 달성 해제한다.
+	 */
+	public void syncAbsoluteProgress(int absoluteProgress, int targetValue) {
+		this.currentProgress = Math.max(0, absoluteProgress);
+		boolean achieved = this.currentProgress >= targetValue;
+		this.isAchieved = achieved;
+		if (achieved && this.achievedDate == null) {
+			this.achievedDate = LocalDateTime.now();
+		}
+		if (!achieved) {
+			this.achievedDate = null;
+		}
+	}
 }

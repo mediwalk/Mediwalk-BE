@@ -20,6 +20,9 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
 
 	boolean existsByUserIdAndAchievementId(Long userId, Long achievementId);
 
+	@Query("SELECT ua FROM UserAchievement ua JOIN ua.achievement a WHERE ua.user.id = :userId AND a.code = :code")
+	Optional<UserAchievement> findByUserIdAndAchievementCode(@Param("userId") Long userId, @Param("code") String code);
+
 	@EntityGraph(attributePaths = "achievement")
 	@Query("SELECT ua FROM UserAchievement ua WHERE ua.id = :id")
 	Optional<UserAchievement> findByIdFetchingAchievement(@Param("id") Long id);

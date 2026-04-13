@@ -5,6 +5,7 @@ import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
 import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
+import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,7 @@ public class RewardTransactionService {
 
 	private final RewardTransactionRepository rewardTransactionRepository;
 	private final UserRepository userRepository;
+	private final AchievementProgressService achievementProgressService;
 
 	public Optional<RewardTransaction> findById(Long id) {
 		return rewardTransactionRepository.findById(id);
@@ -172,7 +174,9 @@ public class RewardTransactionService {
 					.bankName(request.bankName())
 					.accountNumberMasked(request.accountNumberMasked())
 					.build();
-			return rewardTransactionRepository.save(tx);
+			RewardTransaction saved = rewardTransactionRepository.save(tx);
+			achievementProgressService.syncRewardAmountAchievements(user);
+			return saved;
 		}
 
 		// ACCUMULATION은 Event 생성 시 EventService에서 처리
