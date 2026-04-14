@@ -32,17 +32,16 @@ public class UserDailyMissionController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@Operation(summary = "일일 미션 목록", description = "선택적으로 현재 위치를 전달하면 목적지까지 거리/도보시간을 계산합니다.")
+	@Operation(summary = "일일 미션 목록", description = "missionDate가 오늘이면 폐의약품 수거·운동 미션이 없을 경우 자동 생성 후 반환합니다. 선택적으로 현재 위치를 전달하면 목적지까지 거리/도보시간을 계산합니다.")
 	@GetMapping(params = {"userId", "missionDate"})
 	public List<UserDailyMissionResponse> findByUserIdAndMissionDate(
 			@RequestParam Long userId,
 			@RequestParam LocalDate missionDate,
-			@RequestParam(defaultValue = "false") boolean ensureCreated,
 			@Parameter(description = "현재 위도 (선택). 목록 항목의 distanceMeters 등 계산에 사용")
 			@RequestParam(required = false) Double currentLatitude,
 			@Parameter(description = "현재 경도 (선택). 목록 항목의 distanceMeters 등 계산에 사용")
 			@RequestParam(required = false) Double currentLongitude) {
-		if (ensureCreated) {
+		if (missionDate.equals(LocalDate.now())) {
 			userDailyMissionService.ensureTodayMissions(userId, missionDate, currentLatitude, currentLongitude);
 		}
 		return userDailyMissionService.findByUserIdAndMissionDate(userId, missionDate).stream()
