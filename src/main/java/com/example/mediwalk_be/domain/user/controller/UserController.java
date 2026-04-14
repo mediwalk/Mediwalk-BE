@@ -39,13 +39,12 @@ public class UserController {
 	public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
 		return userService.findById(id)
 				.map(user -> {
-					var summary = userService.getRewardMainMonthlySummary(id);
-					return UserResponse.from(
-							user,
-							summary.lastMonthRewardTotal(),
-							summary.thisMonthRewardTotal(),
-							summary.rewardIncreaseRateComparedToLastMonth()
-					);
+				var summary = userService.getRewardMainMonthlySummary(id);
+				return UserResponse.from(
+						user,
+						summary.thisMonthMedicineCollectionRewardTotal(),
+						summary.medicineCollectionRewardIncreaseRateComparedToLastMonth()
+				);
 				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());

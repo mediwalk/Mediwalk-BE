@@ -66,6 +66,7 @@ public class RewardMainService {
 				userId,
 				rewardSummary.lastMonthRewardTotal(),
 				rewardSummary.thisMonthRewardTotal(),
+				rewardSummary.thisMonthMedicineCollectionRewardTotal(),
 				user.getTotalAccumulatedReward(),
 				rewardSummary.rewardIncreaseRateComparedToLastMonth(),
 				totalCollectionsCount,
