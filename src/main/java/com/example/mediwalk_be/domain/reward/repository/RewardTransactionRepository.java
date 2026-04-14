@@ -41,6 +41,46 @@ public interface RewardTransactionRepository extends JpaRepository<RewardTransac
 	);
 
 	@EntityGraph(attributePaths = "event")
+	List<RewardTransaction> findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeOrderByTransactionDateDesc(
+			Long userId,
+			RewardTransactionType transactionType,
+			Integer amount,
+			EventType eventType,
+			Pageable pageable
+	);
+
+	@EntityGraph(attributePaths = "event")
+	List<RewardTransaction> findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeOrderByTransactionDateAsc(
+			Long userId,
+			RewardTransactionType transactionType,
+			Integer amount,
+			EventType eventType,
+			Pageable pageable
+	);
+
+	@EntityGraph(attributePaths = "event")
+	List<RewardTransaction> findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeAndTransactionDateBetweenOrderByTransactionDateDesc(
+			Long userId,
+			RewardTransactionType transactionType,
+			Integer amount,
+			EventType eventType,
+			LocalDateTime start,
+			LocalDateTime end,
+			Pageable pageable
+	);
+
+	@EntityGraph(attributePaths = "event")
+	List<RewardTransaction> findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeAndTransactionDateBetweenOrderByTransactionDateAsc(
+			Long userId,
+			RewardTransactionType transactionType,
+			Integer amount,
+			EventType eventType,
+			LocalDateTime start,
+			LocalDateTime end,
+			Pageable pageable
+	);
+
+	@EntityGraph(attributePaths = "event")
 	@Query("SELECT rt FROM RewardTransaction rt WHERE rt.id = :id")
 	Optional<RewardTransaction> findByIdWithEvent(@Param("id") Long id);
 

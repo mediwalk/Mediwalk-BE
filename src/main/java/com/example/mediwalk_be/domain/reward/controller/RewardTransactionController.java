@@ -55,6 +55,21 @@ public class RewardTransactionController {
 				.toList();
 	}
 
+	@GetMapping("/medicine-collections")
+	@Operation(summary = "폐의약품 수거 적립 목록 조회", description = "사용자 폐의약품 수거(MEDICINE_COLLECTION) 적립 내역만 최신순/오래된순으로 조회합니다. startDateTime/endDateTime을 함께 전달하면 이번 달 등 기간별 상세 리스트에도 사용할 수 있습니다.")
+	public List<RewardTransactionResponse> findMedicineCollectionTransactions(
+			@RequestParam Long userId,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime startDateTime,
+			@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) LocalDateTime endDateTime,
+			@RequestParam(defaultValue = "latest") String sort,
+			@RequestParam(defaultValue = "0") int page,
+			@RequestParam(defaultValue = "20") int size) {
+		return rewardTransactionService
+				.findMedicineCollectionTransactions(userId, startDateTime, endDateTime, sort, PageRequest.of(page, size)).stream()
+				.map(RewardTransactionResponse::from)
+				.toList();
+	}
+
 	@GetMapping("/count")
 	@Operation(summary = "폐의약품 수거 건수 조회", description = "사용자 폐의약품 수거 적립 건수를 조회합니다. startDateTime/endDateTime을 함께 전달하면 기간 건수(월별 등)를, 미전달 시 누적 건수를 반환합니다.")
 	public RewardTransactionCountResponse countByUserId(
