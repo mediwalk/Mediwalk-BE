@@ -2,8 +2,10 @@ package com.example.mediwalk_be.domain.reward.service;
 
 import com.example.mediwalk_be.domain.reward.dto.request.CreateRewardTransactionRequest;
 import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
+import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
+import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 @Service
@@ -22,9 +25,14 @@ public class RewardTransactionService {
 
 	private final RewardTransactionRepository rewardTransactionRepository;
 	private final UserRepository userRepository;
+	private final AchievementProgressService achievementProgressService;
 
 	public Optional<RewardTransaction> findById(Long id) {
 		return rewardTransactionRepository.findById(id);
+	}
+
+	public Optional<RewardTransaction> findByIdWithEvent(Long id) {
+		return rewardTransactionRepository.findByIdWithEvent(id);
 	}
 
 	public RewardTransaction getById(Long id) {
@@ -40,6 +48,154 @@ public class RewardTransactionService {
 		return rewardTransactionRepository.findByUserIdAndTransactionDateBetween(userId, start, end);
 	}
 
+	public List<RewardTransaction> findByUserIdWithOptionalPeriod(
+			Long userId,
+			LocalDateTime startDateTime,
+			LocalDateTime endDateTime,
+			String sort,
+			Pageable pageable
+	) {
+		LocalDateTime start = startDateTime;
+		LocalDateTime end = endDateTime;
+		String normalizedSort = normalizeSort(sort);
+		boolean hasStart = start != null;
+		boolean hasEnd = end != null;
+		if (hasStart != hasEnd) {
+			throw new IllegalArgumentException("기간 필터는 startDateTime, endDateTime을 함께 전달해야 합니다.");
+		}
+		if (hasStart && start != null && end != null && start.isAfter(end)) {
+			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
+		}
+		if (hasStart) {
+			if ("oldest".equals(normalizedSort)) {
+				return rewardTransactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateAsc(
+						userId,
+						start,
+						end,
+						pageable
+				);
+			}
+			return rewardTransactionRepository.findByUserIdAndTransactionDateBetweenOrderByTransactionDateDesc(
+						userId,
+						start,
+						end,
+						pageable
+				);
+		}
+		if ("oldest".equals(normalizedSort)) {
+			return rewardTransactionRepository.findByUserIdOrderByTransactionDateAsc(userId, pageable);
+		}
+		return rewardTransactionRepository.findByUserIdOrderByTransactionDateDesc(userId, pageable);
+	}
+
+	public List<RewardTransaction> findMedicineCollectionTransactions(
+			Long userId,
+			LocalDateTime startDateTime,
+			LocalDateTime endDateTime,
+			String sort,
+			Pageable pageable
+	) {
+		LocalDateTime start = startDateTime;
+		LocalDateTime end = endDateTime;
+		String normalizedSort = normalizeSort(sort);
+		boolean hasStart = start != null;
+		boolean hasEnd = end != null;
+		if (hasStart != hasEnd) {
+			throw new IllegalArgumentException("기간 필터는 startDateTime, endDateTime을 함께 전달해야 합니다.");
+		}
+		if (hasStart && start != null && end != null && start.isAfter(end)) {
+			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
+		}
+
+		if (hasStart) {
+			if ("oldest".equals(normalizedSort)) {
+				return rewardTransactionRepository
+						.findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeAndTransactionDateBetweenOrderByTransactionDateAsc(
+								userId,
+								RewardTransactionType.ACCUMULATION,
+								0,
+								EventType.MEDICINE_COLLECTION,
+								start,
+								end,
+								pageable
+						);
+			}
+			return rewardTransactionRepository
+					.findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeAndTransactionDateBetweenOrderByTransactionDateDesc(
+							userId,
+							RewardTransactionType.ACCUMULATION,
+							0,
+							EventType.MEDICINE_COLLECTION,
+							start,
+							end,
+							pageable
+					);
+		}
+
+		if ("oldest".equals(normalizedSort)) {
+			return rewardTransactionRepository
+					.findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeOrderByTransactionDateAsc(
+							userId,
+							RewardTransactionType.ACCUMULATION,
+							0,
+							EventType.MEDICINE_COLLECTION,
+							pageable
+					);
+		}
+		return rewardTransactionRepository
+				.findByUserIdAndTransactionTypeAndAmountGreaterThanAndEventEventTypeOrderByTransactionDateDesc(
+						userId,
+						RewardTransactionType.ACCUMULATION,
+						0,
+						EventType.MEDICINE_COLLECTION,
+						pageable
+				);
+	}
+
+	public long countByUserIdWithOptionalPeriod(
+			Long userId,
+			LocalDateTime startDateTime,
+			LocalDateTime endDateTime
+	) {
+		LocalDateTime start = startDateTime;
+		LocalDateTime end = endDateTime;
+		boolean hasStart = start != null;
+		boolean hasEnd = end != null;
+		if (hasStart != hasEnd) {
+			throw new IllegalArgumentException("기간 필터는 startDateTime, endDateTime을 함께 전달해야 합니다.");
+		}
+		if (hasStart && start != null && end != null && start.isAfter(end)) {
+			throw new IllegalArgumentException("startDateTime은 endDateTime보다 이후일 수 없습니다.");
+		}
+		if (hasStart) {
+			Long count = rewardTransactionRepository.countAccumulatedEventsByUserIdAndMedicineCollectionBetween(
+					userId,
+					start,
+					end,
+					RewardTransactionType.ACCUMULATION,
+					EventType.MEDICINE_COLLECTION
+			);
+			return count != null ? count : 0L;
+		}
+		Long count = rewardTransactionRepository.countAccumulatedEventsByUserIdAndMedicineCollection(
+				userId,
+				RewardTransactionType.ACCUMULATION,
+				EventType.MEDICINE_COLLECTION
+		);
+		return count != null ? count : 0L;
+	}
+
+	private String normalizeSort(String sort) {
+		if (sort == null || sort.isBlank()) {
+			return "latest";
+		}
+		String normalized = sort.toLowerCase(Locale.ROOT);
+		if (!"latest".equals(normalized) && !"oldest".equals(normalized)) {
+			throw new IllegalArgumentException("sort는 latest 또는 oldest만 허용됩니다.");
+		}
+		return normalized;
+	}
+
 	@Transactional
 	public RewardTransaction save(RewardTransaction rewardTransaction) {
 		return rewardTransactionRepository.save(rewardTransaction);
@@ -52,6 +208,13 @@ public class RewardTransactionService {
 				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + request.userId()));
 
 		if (request.transactionType() == RewardTransactionType.REFUND) {
+			if (request.bankName() == null || request.bankName().isBlank()) {
+				throw new IllegalArgumentException("환급 시 은행명은 필수입니다.");
+			}
+			if (request.accountNumberMasked() == null || request.accountNumberMasked().isBlank()) {
+				throw new IllegalArgumentException("환급 시 계좌번호는 필수입니다.");
+			}
+
 			int refundAmount = request.amount() != null ? request.amount() : 0;
 			if (refundAmount > 0) {
 				refundAmount = -refundAmount;
@@ -59,7 +222,8 @@ public class RewardTransactionService {
 			if (refundAmount > -10_000) {
 				throw new IllegalArgumentException("환급 최소 금액은 10,000원입니다.");
 			}
-			if (user.getTotalAccumulatedReward() + refundAmount < 0) {
+			int currentTotalReward = user.getTotalAccumulatedReward() != null ? user.getTotalAccumulatedReward() : 0;
+			if (currentTotalReward + refundAmount < 0) {
 				throw new IllegalArgumentException("잔액이 부족합니다.");
 			}
 			user.addAccumulatedReward(refundAmount);
@@ -74,7 +238,9 @@ public class RewardTransactionService {
 					.bankName(request.bankName())
 					.accountNumberMasked(request.accountNumberMasked())
 					.build();
-			return rewardTransactionRepository.save(tx);
+			RewardTransaction saved = rewardTransactionRepository.save(tx);
+			achievementProgressService.syncRewardAmountAchievements(user);
+			return saved;
 		}
 
 		// ACCUMULATION은 Event 생성 시 EventService에서 처리

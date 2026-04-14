@@ -11,6 +11,7 @@ import java.util.List;
 public interface EventRepository extends JpaRepository<Event, Long> {
 
 	List<Event> findByUserIdOrderByEventDateTimeDesc(Long userId, Pageable pageable);
+	List<Event> findByUserIdAndEventTypeOrderByEventDateTimeDesc(Long userId, EventType eventType, Pageable pageable);
 
 	List<Event> findByUserIdAndEventDateTimeBetween(Long userId, LocalDateTime start, LocalDateTime end);
 

@@ -23,11 +23,11 @@ public class UserAchievementService {
 	private final AchievementRepository achievementRepository;
 
 	public Optional<UserAchievement> findById(Long id) {
-		return userAchievementRepository.findById(id);
+		return userAchievementRepository.findByIdFetchingAchievement(id);
 	}
 
 	public UserAchievement getById(Long id) {
-		return userAchievementRepository.findById(id)
+		return userAchievementRepository.findByIdFetchingAchievement(id)
 				.orElseThrow(() -> new IllegalArgumentException("UserAchievement not found: id=" + id));
 	}
 

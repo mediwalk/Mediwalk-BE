@@ -7,7 +7,7 @@ import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 
 import java.time.LocalDateTime;
 
-public record RewardTransactionResponse(
+public record RewardMainTransactionResponse(
 	Long id,
 	Long userId,
 	Long eventId,
@@ -25,25 +25,25 @@ public record RewardTransactionResponse(
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
 ) {
-	public static RewardTransactionResponse from(RewardTransaction e) {
+	public static RewardMainTransactionResponse from(RewardTransaction e) {
 		Event event = e.getEvent();
-		return new RewardTransactionResponse(
-			e.getId(),
-			e.getUser().getId(),
-			event != null ? event.getId() : null,
-			event != null ? event.getTitle() : null,
-			event != null ? event.getLocationName() : null,
-			event != null ? event.getEventType() : null,
-			isAccumulationCompleted(e),
-			e.getAmount(),
-			e.getTransactionType(),
-			e.getTransactionDate(),
-			e.getDescription(),
-			event != null ? event.getImageUrl() : null,
-			e.getBankName(),
-			e.getAccountNumberMasked(),
-			e.getCreatedAt(),
-			e.getUpdatedAt()
+		return new RewardMainTransactionResponse(
+				e.getId(),
+				e.getUser().getId(),
+				event != null ? event.getId() : null,
+				event != null ? event.getTitle() : null,
+				event != null ? event.getLocationName() : null,
+				event != null ? event.getEventType() : null,
+				isAccumulationCompleted(e),
+				e.getAmount(),
+				e.getTransactionType(),
+				e.getTransactionDate(),
+				e.getDescription(),
+				event != null ? event.getImageUrl() : null,
+				e.getBankName(),
+				e.getAccountNumberMasked(),
+				e.getCreatedAt(),
+				e.getUpdatedAt()
 		);
 	}
 

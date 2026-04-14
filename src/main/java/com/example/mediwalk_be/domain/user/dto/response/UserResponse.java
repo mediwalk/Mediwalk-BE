@@ -22,9 +22,9 @@ public record UserResponse(
 	Integer totalCollectionsCount,
 	Double currentLatitude,
 	Double currentLongitude,
-	/** 지난 달 적립 리워드 합계 (원) - 홈 화면용 */
+	/** 지난 달 적립 리워드 합계 (원) - 리워드 메인과 동일 집계 */
 	Integer lastMonthRewardTotal,
-	/** 이번 달 적립 리워드 합계 (원) - 홈 화면용 */
+	/** 이번 달 적립 리워드 합계 (원) - 리워드 메인과 동일 집계 */
 	Integer thisMonthRewardTotal,
 	/** 지난 달 대비 리워드 증가율 (%) - 지난 달이 0원이면 null */
 	Double rewardIncreaseRateComparedToLastMonth,

@@ -1,29 +1,51 @@
 package com.example.mediwalk_be.domain.mission.dto.response;
 
 import com.example.mediwalk_be.domain.mission.entity.UserAchievement;
+import com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory;
 
 import java.time.LocalDateTime;
 
 public record UserAchievementResponse(
-	Long id,
-	Long userId,
-	Long achievementId,
-	Integer currentProgress,
-	Boolean isAchieved,
-	LocalDateTime achievedDate,
-	LocalDateTime createdAt,
-	LocalDateTime updatedAt
+		Long id,
+		Long userId,
+		Long achievementId,
+		String achievementCode,
+		String achievementName,
+		String achievementDescription,
+		AchievementCategory achievementCategory,
+		Integer currentProgress,
+		Integer targetValue,
+		String unit,
+		Boolean isAchieved,
+		LocalDateTime achievedDate,
+		String iconType,
+		Integer progressPercent,
+		LocalDateTime createdAt,
+		LocalDateTime updatedAt
 ) {
 	public static UserAchievementResponse from(UserAchievement e) {
+		Integer targetValue = e.getAchievement().getTargetValue();
+		int progressPercent = 0;
+		if (targetValue != null && targetValue > 0) {
+			progressPercent = (int) Math.min(100, Math.round(((double) e.getCurrentProgress() / targetValue) * 100));
+		}
 		return new UserAchievementResponse(
-			e.getId(),
-			e.getUser().getId(),
-			e.getAchievement().getId(),
-			e.getCurrentProgress(),
-			e.getIsAchieved(),
-			e.getAchievedDate(),
-			e.getCreatedAt(),
-			e.getUpdatedAt()
+				e.getId(),
+				e.getUser().getId(),
+				e.getAchievement().getId(),
+				e.getAchievement().getCode(),
+				e.getAchievement().getName(),
+				e.getAchievement().getDescription(),
+				e.getAchievement().getCategory(),
+				e.getCurrentProgress(),
+				e.getAchievement().getTargetValue(),
+				e.getAchievement().getUnit(),
+				e.getIsAchieved(),
+				e.getAchievedDate(),
+				e.getAchievement().getIconType(),
+				progressPercent,
+				e.getCreatedAt(),
+				e.getUpdatedAt()
 		);
 	}
 }

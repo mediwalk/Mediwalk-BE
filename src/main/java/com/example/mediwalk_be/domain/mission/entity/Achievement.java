@@ -2,11 +2,26 @@ package com.example.mediwalk_be.domain.mission.entity;
 
 import com.example.mediwalk_be.domain.common.entity.BaseEntity;
 import com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory;
-import jakarta.persistence.*;
-import lombok.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 @Entity
-@Table(name = "achievements")
+@Table(
+		name = "achievements",
+		uniqueConstraints = @UniqueConstraint(name = "uk_achievements_code", columnNames = "code"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 @AllArgsConstructor
@@ -16,6 +31,10 @@ public class Achievement extends BaseEntity {
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
+
+	/** 업무·클라이언트 식별용 불변 코드 (예: ENV_NOVICE). */
+	@Column(nullable = false, length = 64)
+	private String code;
 
 	/** 목표명. 예: 초보 환경 지킴이, 건강한 걷기 전문가 */
 	@Column(nullable = false, length = 100)

@@ -2,6 +2,7 @@ package com.example.mediwalk_be.domain.walk.service;
 
 import com.example.mediwalk_be.domain.walk.entity.DailySteps;
 import com.example.mediwalk_be.domain.user.entity.User;
+import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.walk.repository.DailyStepsRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,6 +19,7 @@ public class DailyStepsService {
 
 	private final DailyStepsRepository dailyStepsRepository;
 	private final UserRepository userRepository;
+	private final AchievementProgressService achievementProgressService;
 
 	public Optional<DailySteps> findById(Long id) {
 		return dailyStepsRepository.findById(id);
@@ -56,7 +58,9 @@ public class DailyStepsService {
 	public DailySteps addSteps(Long dailyStepsId, int count) {
 		DailySteps ds = getById(dailyStepsId);
 		ds.addSteps(count);
-		return dailyStepsRepository.save(ds);
+		DailySteps saved = dailyStepsRepository.save(ds);
+		achievementProgressService.syncWalkingAchievements(saved.getUser().getId());
+		return saved;
 	}
 
 	@Transactional
