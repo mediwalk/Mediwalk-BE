@@ -22,20 +22,18 @@ public record UserResponse(
 	Integer totalCollectionsCount,
 	Double currentLatitude,
 	Double currentLongitude,
-	/** 지난 달 적립 리워드 합계 (원) - 리워드 메인과 동일 집계 */
-	Integer lastMonthRewardTotal,
-	/** 이번 달 적립 리워드 합계 (원) - 리워드 메인과 동일 집계 */
-	Integer thisMonthRewardTotal,
-	/** 지난 달 대비 리워드 증가율 (%) - 지난 달이 0원이면 null */
-	Double rewardIncreaseRateComparedToLastMonth,
+	/** 이번 달 폐의약품 수거 적립 합계 (원) - 홈 화면 카드용 */
+	Integer thisMonthMedicineCollectionRewardTotal,
+	/** 지난 달 대비 폐의약품 수거 적립 증가율 (%) - 홈 화면 카드용. 지난 달 0원이면 null */
+	Double medicineCollectionRewardIncreaseRateComparedToLastMonth,
 	LocalDateTime createdAt,
 	LocalDateTime updatedAt
 ) {
 	public static UserResponse from(User user) {
-		return from(user, null, null, null);
+		return from(user, null, null);
 	}
 
-	public static UserResponse from(User user, Integer lastMonthRewardTotal, Integer thisMonthRewardTotal, Double rewardIncreaseRateComparedToLastMonth) {
+	public static UserResponse from(User user, Integer thisMonthMedicineCollectionRewardTotal, Double medicineCollectionRewardIncreaseRateComparedToLastMonth) {
 		return new UserResponse(
 			user.getId(),
 			user.getEmail(),
@@ -50,9 +48,8 @@ public record UserResponse(
 			user.getTotalCollectionsCount(),
 			user.getCurrentLatitude(),
 			user.getCurrentLongitude(),
-			lastMonthRewardTotal,
-			thisMonthRewardTotal,
-			rewardIncreaseRateComparedToLastMonth,
+			thisMonthMedicineCollectionRewardTotal,
+			medicineCollectionRewardIncreaseRateComparedToLastMonth,
 			user.getCreatedAt(),
 			user.getUpdatedAt()
 		);
