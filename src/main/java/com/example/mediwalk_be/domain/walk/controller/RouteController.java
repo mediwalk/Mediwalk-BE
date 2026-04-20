@@ -5,6 +5,8 @@ import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.RouteResponse;
 import com.example.mediwalk_be.domain.walk.entity.Route;
 import com.example.mediwalk_be.domain.walk.service.RouteService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
@@ -17,17 +19,20 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/routes")
 @RequiredArgsConstructor
+@Tag(name = "Route", description = "운동 경로: AI 맞춤 경로 생성 및 조회")
 public class RouteController {
 
 	private final RouteService routeService;
 
 	@PostMapping
+	@Operation(summary = "경로 직접 생성")
 	public ResponseEntity<RouteResponse> create(@RequestBody CreateRouteRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(RouteResponse.from(routeService.create(request)));
 	}
 
 	@PostMapping("/generate")
+	@Operation(summary = "AI 맞춤 경로 생성", description = "활동량·경사도(필수), 휴식포인트·자연친화·보행자전용(선택) 필터를 기반으로 AI가 경로를 생성합니다. 응답에 휴식 포인트(POI) 목록이 포함됩니다.")
 	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
 		Route route = routeService.generateRoute(request);
 		// 휴식 포인트(POI) 조회
@@ -37,6 +42,7 @@ public class RouteController {
 	}
 
 	@GetMapping("/{id}")
+	@Operation(summary = "경로 단건 조회")
 	public ResponseEntity<RouteResponse> findById(@PathVariable Long id) {
 		return routeService.findById(id)
 				.map(route -> {
@@ -48,6 +54,7 @@ public class RouteController {
 	}
 
 	@GetMapping(params = "userId")
+	@Operation(summary = "사용자 경로 목록 조회", description = "생성일 내림차순으로 페이징 반환합니다.")
 	public List<RouteResponse> findByUserId(
 			@RequestParam Long userId,
 			@RequestParam(defaultValue = "0") int page,
@@ -58,6 +65,7 @@ public class RouteController {
 	}
 
 	@DeleteMapping("/{id}")
+	@Operation(summary = "경로 삭제")
 	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
 		if (routeService.findById(id).isEmpty()) {
 			return ResponseEntity.notFound().build();
