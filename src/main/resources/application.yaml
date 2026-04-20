@@ -1,6 +1,11 @@
 app:
   ai:
     route-generation-url: ${AI_ROUTE_GENERATION_URL:}
+    medicine-verification:
+      project-id: ${GCP_PROJECT_ID:}
+      endpoint-id: ${GCP_ENDPOINT_ID:}
+      region: ${GCP_REGION:us-central1}
+      credentials-path: ${GCP_CREDENTIALS_PATH:}
 
 spring:
   application:

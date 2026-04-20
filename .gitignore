@@ -48,3 +48,7 @@ application-local.yaml
 application-*-local.yaml
 .env
 .env.*
+
+### GCP Service Account Key ###
+*-service-account.json
+*-credentials.json
