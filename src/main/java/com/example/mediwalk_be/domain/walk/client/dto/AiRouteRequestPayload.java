@@ -9,6 +9,8 @@ public record AiRouteRequestPayload(
 	Double currentLatitude,
 	Double currentLongitude,
 	List<Long> destinationIds,
+	Double destinationLatitude,
+	Double destinationLongitude,
 	FilterPayload filter
 ) {
 	public record FilterPayload(

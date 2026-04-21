@@ -5,5 +5,5 @@ import com.example.mediwalk_be.domain.walk.dto.response.AiRouteGenerationRespons
 
 public interface AiRouteClient {
 
-	AiRouteGenerationResponse generate(RouteGenerationRequest request);
+	AiRouteGenerationResponse generate(RouteGenerationRequest request, Double destinationLatitude, Double destinationLongitude);
 }

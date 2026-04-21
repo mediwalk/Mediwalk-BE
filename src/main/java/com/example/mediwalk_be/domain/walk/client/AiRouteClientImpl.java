@@ -26,7 +26,7 @@ public class AiRouteClientImpl implements AiRouteClient {
 	}
 
 	@Override
-	public AiRouteGenerationResponse generate(RouteGenerationRequest request) {
+	public AiRouteGenerationResponse generate(RouteGenerationRequest request, Double destinationLatitude, Double destinationLongitude) {
 		if (baseUrl.isEmpty()) {
 			throw new IllegalArgumentException(
 					"AI 경로 생성 서비스 URL이 설정되지 않았습니다. app.ai.route-generation-url 또는 AI_ROUTE_GENERATION_URL 환경 변수를 설정하세요.");
@@ -47,6 +47,8 @@ public class AiRouteClientImpl implements AiRouteClient {
 				request.currentLatitude(),
 				request.currentLongitude(),
 				request.destinationIds() != null ? request.destinationIds() : java.util.List.of(),
+				destinationLatitude,
+				destinationLongitude,
 				filterPayload);
 
 		HttpHeaders headers = new HttpHeaders();

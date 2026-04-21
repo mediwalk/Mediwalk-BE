@@ -96,7 +96,12 @@ public class RouteService {
 		if (request.destinationIds() == null || request.destinationIds().isEmpty()) {
 			throw new IllegalArgumentException("후보 목적지(destinationIds)가 비어 있습니다.");
 		}
-		AiRouteGenerationResponse aiResponse = aiRouteClient.generate(request);
+		CollectionLocation destination = collectionLocationRepository
+				.findById(request.destinationIds().get(0))
+				.orElseThrow(() -> new IllegalArgumentException(
+						"CollectionLocation not found: id=" + request.destinationIds().get(0)));
+		AiRouteGenerationResponse aiResponse = aiRouteClient.generate(
+				request, destination.getLatitude(), destination.getLongitude());
 		CreateRouteRequest createRequest = new CreateRouteRequest(
 				request.userId(),
 				null,
