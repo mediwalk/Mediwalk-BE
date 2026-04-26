@@ -39,6 +39,20 @@ public class GlobalExceptionHandler {
 				.body(ErrorResponse.of(code, message, status));
 	}
 
+	/** Tmap 등 외부 경로 API · 설정 오류 */
+	@ExceptionHandler(IllegalStateException.class)
+	public ResponseEntity<ErrorResponse> handleIllegalState(IllegalStateException ex) {
+		String msg = ex.getMessage() != null ? ex.getMessage() : "상태 오류가 발생했습니다.";
+		if (msg.contains("API 키가 설정되지 않았습니다") || msg.contains("URL이 비어 있습니다")) {
+			return ResponseEntity
+					.status(HttpStatus.SERVICE_UNAVAILABLE)
+					.body(ErrorResponse.of(CODE_SERVICE_UNAVAILABLE, msg, HttpStatus.SERVICE_UNAVAILABLE.value()));
+		}
+		return ResponseEntity
+				.status(HttpStatus.BAD_GATEWAY)
+				.body(ErrorResponse.of(CODE_HTTP_ERROR, msg, HttpStatus.BAD_GATEWAY.value()));
+	}
+
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
 		if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("not found")) {

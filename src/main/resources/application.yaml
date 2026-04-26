@@ -1,4 +1,8 @@
 app:
+  tmap:
+    api-key: ${TMAP_APP_KEY:}
+    pedestrian-route-url: ${TMAP_PEDESTRIAN_ROUTE_URL:https://apis.openapi.sk.com/tmap/routes/pedestrian}
+
   ai:
     route-generation-url: ${AI_ROUTE_GENERATION_URL:}
     medicine-verification:
