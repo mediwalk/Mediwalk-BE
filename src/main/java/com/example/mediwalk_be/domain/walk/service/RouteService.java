@@ -1,12 +1,12 @@
 package com.example.mediwalk_be.domain.walk.service;
 
-import com.example.mediwalk_be.domain.walk.client.AiRouteClient;
 import com.example.mediwalk_be.domain.walk.dto.request.CreateRouteRequest;
+import com.example.mediwalk_be.domain.walk.dto.request.RouteFilterRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
-import com.example.mediwalk_be.domain.walk.dto.response.AiRouteGenerationResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.PointOfInterestResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.entity.Route;
+import com.example.mediwalk_be.domain.walk.entity.enums.SlopeLevel;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
@@ -33,7 +33,7 @@ public class RouteService {
 	private final UserDailyMissionRepository userDailyMissionRepository;
 	private final CollectionLocationRepository collectionLocationRepository;
 	private final PointOfInterestRepository pointOfInterestRepository;
-	private final AiRouteClient aiRouteClient;
+	private final TmapPedestrianRouteService tmapPedestrianRouteService;
 
 	public Optional<Route> findById(Long id) {
 		return routeRepository.findById(id);
@@ -100,26 +100,49 @@ public class RouteService {
 				.findById(request.destinationIds().get(0))
 				.orElseThrow(() -> new IllegalArgumentException(
 						"CollectionLocation not found: id=" + request.destinationIds().get(0)));
-		AiRouteGenerationResponse aiResponse = aiRouteClient.generate(
-				request, destination.getLatitude(), destination.getLongitude());
+
+		String searchOption = tmapSearchOption(request.filter());
+		String endName = destination.getName() != null && !destination.getName().isBlank()
+				? destination.getName()
+				: "도착";
+		var tmap = tmapPedestrianRouteService.preview(
+				request.currentLatitude(),
+				request.currentLongitude(),
+				destination.getLatitude(),
+				destination.getLongitude(),
+				"출발",
+				endName,
+				searchOption);
+
+		RouteFilterRequest f = request.filter();
 		CreateRouteRequest createRequest = new CreateRouteRequest(
 				request.userId(),
 				null,
-				aiResponse.destinationId(),
-				aiResponse.startLatitude(),
-				aiResponse.startLongitude(),
-				aiResponse.totalDistanceMeters() != null ? aiResponse.totalDistanceMeters() : 0,
-				aiResponse.estimatedWalkTimeMinutes() != null ? aiResponse.estimatedWalkTimeMinutes() : 0,
-				aiResponse.estimatedSteps() != null ? aiResponse.estimatedSteps() : 0,
-				aiResponse.averageSlope(),
-				aiResponse.activityLevel(),
-				aiResponse.routePolyline(),
-				aiResponse.greenSpaceRatio(),
-				aiResponse.crosswalkCount() != null ? aiResponse.crosswalkCount() : 0,
-				Boolean.TRUE.equals(aiResponse.isPedestrianOnly()),
-				Boolean.TRUE.equals(aiResponse.isNatureFriendly()),
-				Boolean.TRUE.equals(aiResponse.hasRestPoints()));
+				destination.getId(),
+				request.currentLatitude(),
+				request.currentLongitude(),
+				tmap.totalDistanceMeters(),
+				tmap.estimatedWalkTimeMinutes(),
+				tmap.estimatedSteps(),
+				f != null ? f.slopeLevel() : null,
+				f != null ? f.activityLevel() : null,
+				tmap.encodedPolyline(),
+				0.0,
+				0,
+				f != null ? f.pedestrianOnly() : null,
+				f != null ? f.natureFriendly() : null,
+				f != null ? f.includeRestPoints() : null);
 		return create(createRequest);
+	}
+
+	/**
+	 * 경사 필터 중 가파른 구간은 계단 제외 옵션(30)에 대응. 나머지는 (0).
+	 */
+	private static String tmapSearchOption(RouteFilterRequest filter) {
+		if (filter != null && filter.slopeLevel() == SlopeLevel.STEEP) {
+			return "30";
+		}
+		return "0";
 	}
 
 	/**

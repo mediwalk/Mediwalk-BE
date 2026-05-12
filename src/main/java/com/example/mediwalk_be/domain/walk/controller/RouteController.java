@@ -19,7 +19,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/routes")
 @RequiredArgsConstructor
-@Tag(name = "Route", description = "운동 경로: AI 맞춤 경로 생성 및 조회")
+@Tag(name = "Route", description = "운동 경로: 맞춤 경로 생성 및 조회")
 public class RouteController {
 
 	private final RouteService routeService;
@@ -32,7 +32,7 @@ public class RouteController {
 	}
 
 	@PostMapping("/generate")
-	@Operation(summary = "AI 맞춤 경로 생성", description = "활동량·경사도(필수), 휴식포인트·자연친화·보행자전용(선택) 필터를 기반으로 AI가 경로를 생성합니다. 응답에 휴식 포인트(POI) 목록이 포함됩니다.")
+	@Operation(summary = "맞춤 경로 생성", description = "Tmap 보행 경로로 거리·시간·걸음·폴리라인을 산출합니다. 경사 필터가 가파름(STEEP)이면 계단 제외(searchOption 30)를 씁니다.")
 	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
 		Route route = routeService.generateRoute(request);
 		// 휴식 포인트(POI) 조회
