@@ -13,6 +13,8 @@ public record CreateRouteRequest(
 		Integer estimatedSteps,
 		ActivityLevel activityLevel,
 		String routePolyline,
-		Boolean hasRestPoints
+		Boolean hasRestPoints,
+		Boolean notifyEcoMart,
+		Boolean notifyWalkingProgress
 ) {
 }

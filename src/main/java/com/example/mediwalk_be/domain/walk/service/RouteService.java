@@ -75,6 +75,8 @@ public class RouteService {
 				.activityLevel(request.activityLevel())
 				.routePolyline(request.routePolyline())
 				.hasRestPoints(Boolean.TRUE.equals(request.hasRestPoints()))
+				.notifyEcoMart(Boolean.TRUE.equals(request.notifyEcoMart()))
+				.notifyWalkingProgress(Boolean.TRUE.equals(request.notifyWalkingProgress()))
 				.generatedAt(LocalDateTime.now())
 				.build();
 		return routeRepository.save(route);
@@ -120,7 +122,9 @@ public class RouteService {
 				tmap.estimatedSteps(),
 				f.activityLevel(),
 				tmap.encodedPolyline(),
-				f.includeRestPoints());
+				f.includeRestPoints(),
+				f.notifyEcoMart(),
+				f.notifyWalkingProgress());
 		return create(createRequest);
 	}
 

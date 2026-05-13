@@ -61,6 +61,16 @@ public class Route extends BaseEntity {
 	@Builder.Default
 	private Boolean hasRestPoints = false;
 
+	/** 친환경 농산물 마트 안내 알림 */
+	@Column(nullable = false)
+	@Builder.Default
+	private Boolean notifyEcoMart = false;
+
+	/** 산책 진행률(목적지까지 거리 비율 등) 알림 */
+	@Column(nullable = false)
+	@Builder.Default
+	private Boolean notifyWalkingProgress = false;
+
 	@Column(nullable = false)
 	private LocalDateTime generatedAt;
 

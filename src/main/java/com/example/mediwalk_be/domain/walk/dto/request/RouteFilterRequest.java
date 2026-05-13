@@ -5,6 +5,8 @@ import jakarta.validation.constraints.NotNull;
 
 public record RouteFilterRequest(
 		@NotNull ActivityLevel activityLevel,
-		Boolean includeRestPoints
+		Boolean includeRestPoints,
+		Boolean notifyEcoMart,
+		Boolean notifyWalkingProgress
 ) {
 }
