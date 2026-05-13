@@ -6,7 +6,6 @@ import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.PointOfInterestResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.entity.Route;
-import com.example.mediwalk_be.domain.walk.entity.enums.SlopeLevel;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
@@ -73,13 +72,8 @@ public class RouteService {
 				.totalDistanceMeters(request.totalDistanceMeters())
 				.estimatedWalkTimeMinutes(request.estimatedWalkTimeMinutes())
 				.estimatedSteps(request.estimatedSteps() != null ? request.estimatedSteps() : 0)
-				.averageSlope(request.averageSlope())
 				.activityLevel(request.activityLevel())
 				.routePolyline(request.routePolyline())
-				.greenSpaceRatio(request.greenSpaceRatio())
-				.crosswalkCount(request.crosswalkCount() != null ? request.crosswalkCount() : 0)
-				.isPedestrianOnly(Boolean.TRUE.equals(request.isPedestrianOnly()))
-				.isNatureFriendly(Boolean.TRUE.equals(request.isNatureFriendly()))
 				.hasRestPoints(Boolean.TRUE.equals(request.hasRestPoints()))
 				.generatedAt(LocalDateTime.now())
 				.build();
@@ -101,7 +95,7 @@ public class RouteService {
 				.orElseThrow(() -> new IllegalArgumentException(
 						"CollectionLocation not found: id=" + request.destinationIds().get(0)));
 
-		String searchOption = tmapSearchOption(request.filter());
+		String searchOption = "0";
 		String endName = destination.getName() != null && !destination.getName().isBlank()
 				? destination.getName()
 				: "도착";
@@ -124,25 +118,10 @@ public class RouteService {
 				tmap.totalDistanceMeters(),
 				tmap.estimatedWalkTimeMinutes(),
 				tmap.estimatedSteps(),
-				f != null ? f.slopeLevel() : null,
-				f != null ? f.activityLevel() : null,
+				f.activityLevel(),
 				tmap.encodedPolyline(),
-				0.0,
-				0,
-				f != null ? f.pedestrianOnly() : null,
-				f != null ? f.natureFriendly() : null,
-				f != null ? f.includeRestPoints() : null);
+				f.includeRestPoints());
 		return create(createRequest);
-	}
-
-	/**
-	 * 경사 필터 중 가파른 구간은 계단 제외 옵션(30)에 대응. 나머지는 (0).
-	 */
-	private static String tmapSearchOption(RouteFilterRequest filter) {
-		if (filter != null && filter.slopeLevel() == SlopeLevel.STEEP) {
-			return "30";
-		}
-		return "0";
 	}
 
 	/**

@@ -32,10 +32,9 @@ public class RouteController {
 	}
 
 	@PostMapping("/generate")
-	@Operation(summary = "맞춤 경로 생성", description = "Tmap 보행 경로로 거리·시간·걸음·폴리라인을 산출합니다. 경사 필터가 가파름(STEEP)이면 계단 제외(searchOption 30)를 씁니다.")
+	@Operation(summary = "맞춤 경로 생성", description = "Tmap 보행 경로로 거리·시간·걸음·폴리라인을 산출합니다.")
 	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
 		Route route = routeService.generateRoute(request);
-		// 휴식 포인트(POI) 조회
 		var restPoints = routeService.getRestPointsByRouteId(route.getId());
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(RouteResponse.from(route, restPoints));

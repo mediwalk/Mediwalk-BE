@@ -4,7 +4,6 @@ import com.example.mediwalk_be.domain.common.entity.BaseEntity;
 import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.walk.entity.enums.ActivityLevel;
-import com.example.mediwalk_be.domain.walk.entity.enums.SlopeLevel;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -51,31 +50,11 @@ public class Route extends BaseEntity {
 
 	@Enumerated(EnumType.STRING)
 	@Column(length = 20)
-	private SlopeLevel averageSlope;
-
-	@Enumerated(EnumType.STRING)
-	@Column(length = 20)
 	private ActivityLevel activityLevel;
 
 	/** 경로 폴리라인 (Google Maps 등) */
 	@Column(columnDefinition = "TEXT")
 	private String routePolyline;
-
-	/** 녹지율 (%) - 환경 맞춤형 필터 */
-	private Double greenSpaceRatio;
-
-	/** 횡단보도 개수 */
-	private Integer crosswalkCount;
-
-	/** 보행자 전용 경로 우선 여부 */
-	@Column(nullable = false)
-	@Builder.Default
-	private Boolean isPedestrianOnly = false;
-
-	/** 자연 친화 경로 여부 */
-	@Column(nullable = false)
-	@Builder.Default
-	private Boolean isNatureFriendly = false;
 
 	/** 휴식 포인트 포함 여부 */
 	@Column(nullable = false)
