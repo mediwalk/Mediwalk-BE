@@ -32,7 +32,7 @@ public class RouteController {
 	}
 
 	@PostMapping("/generate")
-	@Operation(summary = "맞춤 경로 생성", description = "Tmap 보행 경로로 거리·시간·걸음·폴리라인을 산출합니다. filter에 휴식 포인트·마트 알림·진행률 알림 옵션을 함께 전달할 수 있습니다.")
+	@Operation(summary = "맞춤 경로 생성", description = "destinationIds에 여러 수거함 id를 넣으면, filter.activityLevel 목표 걸음(약 2천/4천/6천 보)에 가장 가까운 후보를 고른 뒤 Tmap 보행 경로를 한 번 산출합니다. 저장된 Route의 destinationId가 선택된 목적지입니다. filter에 휴식 포인트·마트·진행 알림 옵션을 함께 전달할 수 있습니다.")
 	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
 		Route route = routeService.generateRoute(request);
 		var restPoints = routeService.getRestPointsByRouteId(route.getId());
