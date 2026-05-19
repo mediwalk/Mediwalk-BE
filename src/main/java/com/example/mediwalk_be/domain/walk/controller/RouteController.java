@@ -2,8 +2,10 @@ package com.example.mediwalk_be.domain.walk.controller;
 
 import com.example.mediwalk_be.domain.walk.dto.request.CreateRouteRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
+import com.example.mediwalk_be.domain.walk.dto.response.AlongRoutePoiResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.RouteResponse;
 import com.example.mediwalk_be.domain.walk.entity.Route;
+import com.example.mediwalk_be.domain.walk.service.RouteAlongPoiSuggestionService;
 import com.example.mediwalk_be.domain.walk.service.RouteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -23,6 +25,7 @@ import java.util.List;
 public class RouteController {
 
 	private final RouteService routeService;
+	private final RouteAlongPoiSuggestionService routeAlongPoiSuggestionService;
 
 	@PostMapping
 	@Operation(summary = "경로 직접 생성")
@@ -32,22 +35,20 @@ public class RouteController {
 	}
 
 	@PostMapping("/generate")
-	@Operation(summary = "맞춤 경로 생성", description = "destinationIds에 여러 수거함 id를 넣으면, filter.activityLevel 목표 걸음(약 2천/4천/6천 보)에 가장 가까운 후보를 고른 뒤 Tmap 보행 경로를 한 번 산출합니다. 저장된 Route의 destinationId가 선택된 목적지입니다. filter에 휴식 포인트·마트·진행 알림 옵션을 함께 전달할 수 있습니다.")
+	@Operation(summary = "맞춤 경로 생성",
+			description = "destinationIds 후보 중 filter.activityLevel에 맞는 수거함을 고른 뒤 Tmap 보행 경로를 산출합니다. "
+					+ "notifyEcoMart·hasRestPoints가 참이면 경로 폴리라인을 따라 Tmap 주변 POI로 마트·공원 후보 목록을 같이 채웁니다(키·카테고리 설정 필요).")
 	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
 		Route route = routeService.generateRoute(request);
-		var restPoints = routeService.getRestPointsByRouteId(route.getId());
 		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(RouteResponse.from(route, restPoints));
+				.body(toRouteResponseWithAlongPois(route));
 	}
 
 	@GetMapping("/{id}")
 	@Operation(summary = "경로 단건 조회")
 	public ResponseEntity<RouteResponse> findById(@PathVariable Long id) {
 		return routeService.findById(id)
-				.map(route -> {
-					var restPoints = routeService.getRestPointsByRouteId(route.getId());
-					return RouteResponse.from(route, restPoints);
-				})
+				.map(this::toRouteResponseWithAlongPois)
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -71,5 +72,21 @@ public class RouteController {
 		}
 		routeService.deleteById(id);
 		return ResponseEntity.noContent().build();
+	}
+
+	private RouteResponse toRouteResponseWithAlongPois(Route route) {
+		var restPoints = routeService.getRestPointsByRouteId(route.getId());
+		String poly = route.getRoutePolyline();
+
+		List<AlongRoutePoiResponse> marts =
+				Boolean.TRUE.equals(route.getNotifyEcoMart()) && poly != null && !poly.isBlank()
+						? routeAlongPoiSuggestionService.collectMartSuggestions(poly)
+						: List.of();
+		List<AlongRoutePoiResponse> parks =
+				Boolean.TRUE.equals(route.getHasRestPoints()) && poly != null && !poly.isBlank()
+						? routeAlongPoiSuggestionService.collectParkSuggestions(poly)
+						: List.of();
+
+		return RouteResponse.from(route, restPoints, marts, parks);
 	}
 }

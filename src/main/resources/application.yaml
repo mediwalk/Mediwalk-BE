@@ -2,6 +2,16 @@ app:
   tmap:
     api-key: ${TMAP_APP_KEY:}
     pedestrian-route-url: ${TMAP_PEDESTRIAN_ROUTE_URL:https://apis.openapi.sk.com/tmap/routes/pedestrian}
+    # 경로 폴리라인을 따라 근처 POI 후보 검색 시 사용 (키 없으면 서비스는 빈 목록 반환)
+    poi-around-search-url: ${TMAP_POI_AROUND_SEARCH_URL:https://apis.openapi.sk.com/tmap/pois/search/around}
+    poi-sample-interval-meters: 260 # 샘플 지점 간 거리(m)
+    poi-sample-max-points: 14       # 폴당 최대 검색 원 개수 상한
+    poi-search-radius-km: "1"       # SK 주변 POI: 정수 km만 허용(1~33), 전국은 0. 소수는 올림되어 전송됨
+    poi-mart-categories: "대형마트;마트"
+    poi-park-categories: "공원"
+    poi-search-count-per-call: 18   # per-center count (최대 50)
+    # 폴리라인(선분)까지 최단거리 순으로 자를 때 카테고리당 최대 개수 (기본 1 = 마트·공원 각 1곳)
+    poi-max-suggestions-per-category: 1
 
   ai:
     medicine-verification:
