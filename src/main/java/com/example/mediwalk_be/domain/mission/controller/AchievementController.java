@@ -19,17 +19,21 @@ import com.example.mediwalk_be.domain.mission.entity.Achievement;
 import com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory;
 import com.example.mediwalk_be.domain.mission.service.AchievementService;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
 @RequestMapping("/api/achievements")
 @RequiredArgsConstructor
+@Tag(name = "Achievement", description = "업적 마스터: 목표 정의 조회·시드")
 public class AchievementController {
 
 	private final AchievementService achievementService;
 
 	@GetMapping
+	@Operation(summary = "업적 전체 조회")
 	public List<AchievementResponse> findAll() {
 		return achievementService.findAll().stream()
 				.map(AchievementResponse::from)
@@ -37,6 +41,7 @@ public class AchievementController {
 	}
 
 	@GetMapping("/{id}")
+	@Operation(summary = "업적 단건 조회")
 	public ResponseEntity<AchievementResponse> findById(@PathVariable Long id) {
 		return achievementService.findById(id)
 				.map(AchievementResponse::from)
@@ -45,6 +50,7 @@ public class AchievementController {
 	}
 
 	@GetMapping(params = "category")
+	@Operation(summary = "업적 카테고리별 조회", description = "ENVIRONMENTAL_PROTECTOR, WALKING_EXPERT, SAVINGS_MASTER 등 카테고리로 필터링합니다.")
 	public List<AchievementResponse> findByCategory(@RequestParam AchievementCategory category) {
 		return achievementService.findByCategory(category).stream()
 				.map(AchievementResponse::from)
@@ -52,6 +58,7 @@ public class AchievementController {
 	}
 
 	@PostMapping
+	@Operation(summary = "업적 등록", description = "새 업적 마스터를 생성합니다. (시드·관리용)")
 	public ResponseEntity<AchievementResponse> create(@Valid @RequestBody CreateAchievementRequest request) {
 		Achievement entity = Achievement.builder()
 				.code(request.code())
@@ -67,6 +74,7 @@ public class AchievementController {
 	}
 
 	@DeleteMapping("/{id}")
+	@Operation(summary = "업적 삭제", description = "업적 ID 기준으로 마스터를 삭제합니다. (관리·테스트용)")
 	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
 		if (achievementService.findById(id).isEmpty()) {
 			return ResponseEntity.notFound().build();

@@ -28,7 +28,7 @@ public class RouteController {
 	private final RouteAlongPoiSuggestionService routeAlongPoiSuggestionService;
 
 	@PostMapping
-	@Operation(summary = "경로 직접 생성")
+	@Operation(summary = "경로 직접 생성", description = "Tmap 없이 경로 데이터를 직접 저장합니다. (관리·테스트용 — 앱은 POST /routes/generate 사용)")
 	public ResponseEntity<RouteResponse> create(@RequestBody CreateRouteRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(RouteResponse.from(routeService.create(request)));
