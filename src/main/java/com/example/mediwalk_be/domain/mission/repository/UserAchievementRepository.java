@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.mission.repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,4 +27,18 @@ public interface UserAchievementRepository extends JpaRepository<UserAchievement
 	@EntityGraph(attributePaths = "achievement")
 	@Query("SELECT ua FROM UserAchievement ua WHERE ua.id = :id")
 	Optional<UserAchievement> findByIdFetchingAchievement(@Param("id") Long id);
+
+	@EntityGraph(attributePaths = "achievement")
+	@Query("""
+			SELECT ua FROM UserAchievement ua
+			WHERE ua.user.id = :userId
+			  AND ua.isAchieved = true
+			  AND ua.achievedDate >= :start
+			  AND ua.achievedDate < :end
+			ORDER BY ua.achievedDate DESC
+			""")
+	List<UserAchievement> findAchievedByUserIdAndAchievedDateBetweenOrderByAchievedDateDesc(
+			@Param("userId") Long userId,
+			@Param("start") LocalDateTime start,
+			@Param("end") LocalDateTime end);
 }
