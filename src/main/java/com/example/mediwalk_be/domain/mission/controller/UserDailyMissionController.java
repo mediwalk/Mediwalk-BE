@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.mission.controller;
 import com.example.mediwalk_be.domain.mission.dto.request.CompleteUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.request.CreateUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserDailyMissionResponse;
+import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.mission.service.UserDailyMissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -62,6 +63,22 @@ public class UserDailyMissionController {
 				request.missionDate()
 		);
 		return ResponseEntity.status(HttpStatus.CREATED).body(UserDailyMissionResponse.from(saved));
+	}
+
+	@GetMapping("/{id}/destination-proximity")
+	@Operation(
+			summary = "목적지 인증 반경 확인",
+			description = "현재 위치가 미션 목적지(수거함) 인증 반경(activationRadius, 기본 20m) 이내인지 확인합니다. "
+					+ "이미지 인식 페이지 진입 전에 호출하세요. withinActivationRadius가 true일 때만 인증을 진행하면 됩니다."
+	)
+	public ResponseEntity<DestinationProximityResponse> checkDestinationProximity(
+			@PathVariable Long id,
+			@RequestParam double currentLatitude,
+			@RequestParam double currentLongitude) {
+		if (userDailyMissionService.findById(id).isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(userDailyMissionService.checkDestinationProximity(id, currentLatitude, currentLongitude));
 	}
 
 	@PostMapping("/{id}/complete")
