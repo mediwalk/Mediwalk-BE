@@ -13,8 +13,11 @@ import com.example.mediwalk_be.domain.walk.repository.CollectionLocationReposito
 import com.example.mediwalk_be.domain.reward.repository.EventRepository;
 import com.example.mediwalk_be.domain.walk.repository.DailyStepsRepository;
 import com.example.mediwalk_be.domain.walk.repository.RouteRepository;
+import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
+import com.example.mediwalk_be.domain.mission.entity.enums.MissionStatus;
 import com.example.mediwalk_be.domain.mission.repository.UserAchievementRepository;
 import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
+import com.example.mediwalk_be.domain.mission.service.UserDailyMissionService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
@@ -45,6 +48,7 @@ public class EventService {
 	private final UserAchievementRepository userAchievementRepository;
 	private final RewardTransactionRepository rewardTransactionRepository;
 	private final AchievementProgressService achievementProgressService;
+	private final UserDailyMissionService userDailyMissionService;
 
 	public Optional<Event> findById(Long id) {
 		return eventRepository.findById(id);
@@ -155,6 +159,14 @@ public class EventService {
 			achievementProgressService.syncRewardAmountAchievements(user);
 		}
 
+		Long completedMissionId = null;
+		MissionStatus completedMissionStatus = null;
+		if (request.userDailyMissionId() != null) {
+			UserDailyMission completedMission = completeLinkedDailyMission(request, rewardAmount);
+			completedMissionId = completedMission.getId();
+			completedMissionStatus = completedMission.getStatus();
+		}
+
 		int totalAccumulatedReward = user.getTotalAccumulatedReward() != null ? user.getTotalAccumulatedReward() : 0;
 		int todayWalkingDistanceMeters = resolveTodayWalkingDistanceMeters(user.getId());
 		String todayAchievementName = resolveTodayAchievementName(user.getId());
@@ -163,7 +175,30 @@ public class EventService {
 				event,
 				totalAccumulatedReward,
 				todayWalkingDistanceMeters,
-				todayAchievementName
+				todayAchievementName,
+				completedMissionId,
+				completedMissionStatus
+		);
+	}
+
+	private UserDailyMission completeLinkedDailyMission(CreateEventRequest request, int rewardAmount) {
+		UserDailyMission mission = userDailyMissionService.getById(request.userDailyMissionId());
+		if (!mission.getUser().getId().equals(request.userId())) {
+			throw new IllegalArgumentException("userDailyMissionId가 userId와 일치하지 않습니다.");
+		}
+		if (mission.getStatus() == MissionStatus.COMPLETED) {
+			throw new IllegalArgumentException("이미 완료된 일일 미션입니다: id=" + mission.getId());
+		}
+		if (request.collectionLocationId() != null
+				&& mission.getCollectionLocation() != null
+				&& !request.collectionLocationId().equals(mission.getCollectionLocation().getId())) {
+			throw new IllegalArgumentException("collectionLocationId가 일일 미션 목적지와 일치하지 않습니다.");
+		}
+		return userDailyMissionService.complete(
+				mission.getId(),
+				rewardAmount,
+				request.currentLatitude(),
+				request.currentLongitude()
 		);
 	}
 

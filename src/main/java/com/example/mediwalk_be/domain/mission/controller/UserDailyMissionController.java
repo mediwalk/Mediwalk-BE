@@ -1,6 +1,5 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
-import com.example.mediwalk_be.domain.mission.dto.request.CompleteUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.request.CreateUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserDailyMissionResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
@@ -19,7 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user-daily-missions")
 @RequiredArgsConstructor
-@Tag(name = "UserDailyMission", description = "일일 미션: 오늘의 미션 조회·완료")
+@Tag(name = "UserDailyMission", description = "일일 미션: 오늘의 미션 조회")
 public class UserDailyMissionController {
 
 	private final UserDailyMissionService userDailyMissionService;
@@ -79,21 +78,6 @@ public class UserDailyMissionController {
 			return ResponseEntity.notFound().build();
 		}
 		return ResponseEntity.ok(userDailyMissionService.checkDestinationProximity(id, currentLatitude, currentLongitude));
-	}
-
-	@PostMapping("/{id}/complete")
-	@Operation(summary = "일일 미션 완료", description = "미션을 COMPLETED로 변경합니다. 목적지가 있으면 현재 위치가 수거함 반경(기본 20m) 이내인지 검증합니다.")
-	public ResponseEntity<UserDailyMissionResponse> complete(
-			@PathVariable Long id,
-			@RequestBody CompleteUserDailyMissionRequest request) {
-		Integer reward = request.earnedReward() != null ? request.earnedReward() : 0;
-		var updated = userDailyMissionService.complete(
-				id, 
-				reward, 
-				request.currentLatitude(), 
-				request.currentLongitude()
-		);
-		return ResponseEntity.ok(UserDailyMissionResponse.from(updated));
 	}
 
 	@DeleteMapping("/{id}")

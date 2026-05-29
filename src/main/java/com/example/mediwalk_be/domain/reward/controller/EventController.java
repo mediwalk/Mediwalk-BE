@@ -28,7 +28,9 @@ public class EventController {
 			summary = "이벤트 생성",
 			description = """
 					수거/운동 미션 등 이벤트를 생성하고, 리워드가 있으면 적립 거래를 함께 기록합니다.
-					응답에는 인증 완료 화면용으로 누적 잔액, 오늘의 운동 거리, 오늘의 성취명이 포함됩니다.
+					userDailyMissionId를 전달하면 같은 요청에서 일일 미션도 COMPLETED 처리합니다(별도 complete 호출 불필요).
+					응답에는 인증 완료 화면용으로 누적 잔액, 오늘의 운동 거리, 오늘의 성취명,
+					처리된 미션(userDailyMissionId, userDailyMissionStatus)이 포함됩니다.
 					"""
 	)
 	public ResponseEntity<EventCreateResponse> create(@RequestBody CreateEventRequest request) {
