@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.walk.service;
 
+import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
 import lombok.RequiredArgsConstructor;
@@ -24,6 +25,14 @@ public class CollectionLocationService {
 	public CollectionLocation getById(Long id) {
 		return collectionLocationRepository.findById(id)
 				.orElseThrow(() -> new IllegalArgumentException("CollectionLocation not found: id=" + id));
+	}
+
+	public DestinationProximityResponse checkDestinationProximity(
+			Long id,
+			double currentLatitude,
+			double currentLongitude) {
+		CollectionLocation destination = getById(id);
+		return DestinationProximityResponse.from(destination, currentLatitude, currentLongitude);
 	}
 
 	public List<CollectionLocation> findAll() {

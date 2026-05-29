@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.walk.controller;
 import com.example.mediwalk_be.domain.walk.dto.request.CreateCollectionLocationRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationWithDistanceResponse;
+import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.service.CollectionLocationService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -61,6 +62,24 @@ public class CollectionLocationController {
 		return collectionLocationService.searchByKeyword(q.trim(), effectiveLimit).stream()
 				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
 				.toList();
+	}
+
+	@GetMapping("/{id}/destination-proximity")
+	@Operation(
+			summary = "수거함 인증 반경 확인",
+			description = "현재 위치가 수거함 인증 반경(activationRadius, 기본 20m) 이내인지 확인합니다. "
+					+ "수거함 직접 선택 후 경로 인증·이미지 인식 전에 호출하세요. "
+					+ "withinActivationRadius가 true일 때만 인증을 진행하면 됩니다."
+	)
+	public ResponseEntity<DestinationProximityResponse> checkDestinationProximity(
+			@PathVariable Long id,
+			@RequestParam double currentLatitude,
+			@RequestParam double currentLongitude) {
+		if (collectionLocationService.findById(id).isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(
+				collectionLocationService.checkDestinationProximity(id, currentLatitude, currentLongitude));
 	}
 
 	@GetMapping("/{id}")
