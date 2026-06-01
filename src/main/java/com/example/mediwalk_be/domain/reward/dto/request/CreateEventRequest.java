@@ -14,6 +14,7 @@ public record CreateEventRequest(
 	Long collectionLocationId,
 	String imageUrl,
 	Long routeId,
+	Long userDailyMissionId,
 	Double currentLatitude,
 	Double currentLongitude
 ) {

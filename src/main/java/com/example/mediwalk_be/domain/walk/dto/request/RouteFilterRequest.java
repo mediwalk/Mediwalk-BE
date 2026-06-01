@@ -1,13 +1,12 @@
 package com.example.mediwalk_be.domain.walk.dto.request;
 
 import com.example.mediwalk_be.domain.walk.entity.enums.ActivityLevel;
-import com.example.mediwalk_be.domain.walk.entity.enums.SlopeLevel;
+import jakarta.validation.constraints.NotNull;
 
 public record RouteFilterRequest(
-	ActivityLevel activityLevel,
-	SlopeLevel slopeLevel,
-	Boolean includeRestPoints,
-	Boolean natureFriendly,
-	Boolean pedestrianOnly
+		@NotNull ActivityLevel activityLevel,
+		Boolean includeRestPoints,
+		Boolean notifyEcoMart,
+		Boolean notifyWalkingProgress
 ) {
 }

@@ -1,11 +1,12 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
-import com.example.mediwalk_be.domain.mission.dto.request.CompleteUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.request.CreateUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserDailyMissionResponse;
+import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.mission.service.UserDailyMissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,11 +18,13 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/user-daily-missions")
 @RequiredArgsConstructor
+@Tag(name = "UserDailyMission", description = "일일 미션: 오늘의 미션 조회")
 public class UserDailyMissionController {
 
 	private final UserDailyMissionService userDailyMissionService;
 
 	@GetMapping("/{id}")
+	@Operation(summary = "일일 미션 단건 조회", description = "미션 상세(제목·목적지·상태). currentLatitude/Longitude 전달 시 목적지까지 거리·도보시간을 계산합니다.")
 	public ResponseEntity<UserDailyMissionResponse> findById(
 			@PathVariable Long id,
 			@RequestParam(required = false) Double currentLatitude,
@@ -50,6 +53,7 @@ public class UserDailyMissionController {
 	}
 
 	@PostMapping
+	@Operation(summary = "일일 미션 수동 생성", description = "특정 날짜·미션 템플릿으로 일일 미션을 직접 생성합니다. 오늘 미션은 목록 조회 시 자동 생성됩니다.")
 	public ResponseEntity<UserDailyMissionResponse> create(@RequestBody CreateUserDailyMissionRequest request) {
 		var saved = userDailyMissionService.create(
 				request.userId(),
@@ -60,21 +64,24 @@ public class UserDailyMissionController {
 		return ResponseEntity.status(HttpStatus.CREATED).body(UserDailyMissionResponse.from(saved));
 	}
 
-	@PostMapping("/{id}/complete")
-	public ResponseEntity<UserDailyMissionResponse> complete(
+	@GetMapping("/{id}/destination-proximity")
+	@Operation(
+			summary = "목적지 인증 반경 확인",
+			description = "현재 위치가 미션 목적지(수거함) 인증 반경(activationRadius, 기본 20m) 이내인지 확인합니다. "
+					+ "이미지 인식 페이지 진입 전에 호출하세요. withinActivationRadius가 true일 때만 인증을 진행하면 됩니다."
+	)
+	public ResponseEntity<DestinationProximityResponse> checkDestinationProximity(
 			@PathVariable Long id,
-			@RequestBody CompleteUserDailyMissionRequest request) {
-		Integer reward = request.earnedReward() != null ? request.earnedReward() : 0;
-		var updated = userDailyMissionService.complete(
-				id, 
-				reward, 
-				request.currentLatitude(), 
-				request.currentLongitude()
-		);
-		return ResponseEntity.ok(UserDailyMissionResponse.from(updated));
+			@RequestParam double currentLatitude,
+			@RequestParam double currentLongitude) {
+		if (userDailyMissionService.findById(id).isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(userDailyMissionService.checkDestinationProximity(id, currentLatitude, currentLongitude));
 	}
 
 	@DeleteMapping("/{id}")
+	@Operation(summary = "일일 미션 삭제", description = "일일 미션 ID 기준으로 데이터를 삭제합니다. (관리·테스트용)")
 	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
 		if (userDailyMissionService.findById(id).isEmpty()) {
 			return ResponseEntity.notFound().build();

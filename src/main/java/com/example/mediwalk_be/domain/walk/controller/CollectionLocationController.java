@@ -3,8 +3,11 @@ package com.example.mediwalk_be.domain.walk.controller;
 import com.example.mediwalk_be.domain.walk.dto.request.CreateCollectionLocationRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationWithDistanceResponse;
+import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.service.CollectionLocationService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +18,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/collection-locations")
 @RequiredArgsConstructor
+@Tag(name = "CollectionLocation", description = "폐의약품 수거함: 위치 조회 및 근처 수거함 탐색")
 public class CollectionLocationController {
 
 	private static final int NEARBY_RADIUS_METERS = 3000;
@@ -23,6 +27,7 @@ public class CollectionLocationController {
 	private final CollectionLocationService collectionLocationService;
 
 	@GetMapping
+	@Operation(summary = "수거함 전체 조회")
 	public List<CollectionLocationResponse> findAll() {
 		return collectionLocationService.findAll().stream()
 				.map(CollectionLocationResponse::from)
@@ -30,6 +35,7 @@ public class CollectionLocationController {
 	}
 
 	@GetMapping("/nearby")
+	@Operation(summary = "근처 수거함 조회", description = "현재 위치 기준 3km 이내 수거함을 거리순으로 반환합니다. limit 파라미터로 최대 개수를 제한할 수 있습니다.")
 	public List<CollectionLocationWithDistanceResponse> findNearby(
 			@RequestParam double latitude,
 			@RequestParam double longitude,
@@ -43,11 +49,8 @@ public class CollectionLocationController {
 				.toList();
 	}
 
-	/**
-	 * 폐의약품 수거 장소 검색 (장소명·주소 부분 일치).
-	 * 응답에 현 위치 기준 거리·도보시간·걸음수 포함.
-	 */
 	@GetMapping("/search")
+	@Operation(summary = "수거함 검색", description = "장소명·주소 부분 일치 검색. 현 위치 기준 거리·도보시간·걸음수를 포함하여 반환합니다.")
 	public List<CollectionLocationWithDistanceResponse> search(
 			@RequestParam String q,
 			@RequestParam double latitude,
@@ -61,7 +64,26 @@ public class CollectionLocationController {
 				.toList();
 	}
 
+	@GetMapping("/{id}/destination-proximity")
+	@Operation(
+			summary = "수거함 인증 반경 확인",
+			description = "현재 위치가 수거함 인증 반경(activationRadius, 기본 20m) 이내인지 확인합니다. "
+					+ "수거함 직접 선택 후 경로 인증·이미지 인식 전에 호출하세요. "
+					+ "withinActivationRadius가 true일 때만 인증을 진행하면 됩니다."
+	)
+	public ResponseEntity<DestinationProximityResponse> checkDestinationProximity(
+			@PathVariable Long id,
+			@RequestParam double currentLatitude,
+			@RequestParam double currentLongitude) {
+		if (collectionLocationService.findById(id).isEmpty()) {
+			return ResponseEntity.notFound().build();
+		}
+		return ResponseEntity.ok(
+				collectionLocationService.checkDestinationProximity(id, currentLatitude, currentLongitude));
+	}
+
 	@GetMapping("/{id}")
+	@Operation(summary = "수거함 단건 조회")
 	public ResponseEntity<CollectionLocationResponse> findById(@PathVariable Long id) {
 		return collectionLocationService.findById(id)
 				.map(CollectionLocationResponse::from)
@@ -70,6 +92,7 @@ public class CollectionLocationController {
 	}
 
 	@PostMapping
+	@Operation(summary = "수거함 등록")
 	public ResponseEntity<CollectionLocationResponse> create(@RequestBody CreateCollectionLocationRequest request) {
 		CollectionLocation entity = CollectionLocation.builder()
 				.name(request.name())
@@ -85,6 +108,7 @@ public class CollectionLocationController {
 	}
 
 	@DeleteMapping("/{id}")
+	@Operation(summary = "수거함 삭제")
 	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
 		if (collectionLocationService.findById(id).isEmpty()) {
 			return ResponseEntity.notFound().build();

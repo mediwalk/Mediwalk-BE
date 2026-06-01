@@ -1,17 +1,18 @@
 package com.example.mediwalk_be.domain.walk.service;
 
-import com.example.mediwalk_be.domain.walk.client.AiRouteClient;
 import com.example.mediwalk_be.domain.walk.dto.request.CreateRouteRequest;
+import com.example.mediwalk_be.domain.walk.dto.request.RouteFilterRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
-import com.example.mediwalk_be.domain.walk.dto.response.AiRouteGenerationResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.PointOfInterestResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.entity.Route;
+import com.example.mediwalk_be.domain.walk.entity.enums.ActivityLevel;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
 import com.example.mediwalk_be.domain.walk.repository.PointOfInterestRepository;
 import com.example.mediwalk_be.domain.walk.repository.RouteRepository;
+import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
 import com.example.mediwalk_be.domain.mission.repository.UserDailyMissionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,12 +29,15 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class RouteService {
 
+	/** {@link TmapPedestrianRouteService} 예상 걸음 산출과 동일한 보수적 가정(미터/보) */
+	private static final double ESTIMATE_METERS_PER_STEP = 0.75;
+
 	private final RouteRepository routeRepository;
 	private final UserRepository userRepository;
 	private final UserDailyMissionRepository userDailyMissionRepository;
 	private final CollectionLocationRepository collectionLocationRepository;
 	private final PointOfInterestRepository pointOfInterestRepository;
-	private final AiRouteClient aiRouteClient;
+	private final TmapPedestrianRouteService tmapPedestrianRouteService;
 
 	public Optional<Route> findById(Long id) {
 		return routeRepository.findById(id);
@@ -73,14 +77,11 @@ public class RouteService {
 				.totalDistanceMeters(request.totalDistanceMeters())
 				.estimatedWalkTimeMinutes(request.estimatedWalkTimeMinutes())
 				.estimatedSteps(request.estimatedSteps() != null ? request.estimatedSteps() : 0)
-				.averageSlope(request.averageSlope())
 				.activityLevel(request.activityLevel())
 				.routePolyline(request.routePolyline())
-				.greenSpaceRatio(request.greenSpaceRatio())
-				.crosswalkCount(request.crosswalkCount() != null ? request.crosswalkCount() : 0)
-				.isPedestrianOnly(Boolean.TRUE.equals(request.isPedestrianOnly()))
-				.isNatureFriendly(Boolean.TRUE.equals(request.isNatureFriendly()))
 				.hasRestPoints(Boolean.TRUE.equals(request.hasRestPoints()))
+				.notifyEcoMart(Boolean.TRUE.equals(request.notifyEcoMart()))
+				.notifyWalkingProgress(Boolean.TRUE.equals(request.notifyWalkingProgress()))
 				.generatedAt(LocalDateTime.now())
 				.build();
 		return routeRepository.save(route);
@@ -96,25 +97,93 @@ public class RouteService {
 		if (request.destinationIds() == null || request.destinationIds().isEmpty()) {
 			throw new IllegalArgumentException("후보 목적지(destinationIds)가 비어 있습니다.");
 		}
-		AiRouteGenerationResponse aiResponse = aiRouteClient.generate(request);
+		RouteFilterRequest f = request.filter();
+		if (f == null) {
+			throw new IllegalArgumentException("filter는 필수입니다.");
+		}
+		CollectionLocation destination = pickOptimalCollectionLocation(
+				request.destinationIds(),
+				request.currentLatitude(),
+				request.currentLongitude(),
+				f.activityLevel());
+
+		String searchOption = "0";
+		String endName = destination.getName() != null && !destination.getName().isBlank()
+				? destination.getName()
+				: "도착";
+		var tmap = tmapPedestrianRouteService.preview(
+				request.currentLatitude(),
+				request.currentLongitude(),
+				destination.getLatitude(),
+				destination.getLongitude(),
+				"출발",
+				endName,
+				searchOption);
+
 		CreateRouteRequest createRequest = new CreateRouteRequest(
 				request.userId(),
 				null,
-				aiResponse.destinationId(),
-				aiResponse.startLatitude(),
-				aiResponse.startLongitude(),
-				aiResponse.totalDistanceMeters() != null ? aiResponse.totalDistanceMeters() : 0,
-				aiResponse.estimatedWalkTimeMinutes() != null ? aiResponse.estimatedWalkTimeMinutes() : 0,
-				aiResponse.estimatedSteps() != null ? aiResponse.estimatedSteps() : 0,
-				aiResponse.averageSlope(),
-				aiResponse.activityLevel(),
-				aiResponse.routePolyline(),
-				aiResponse.greenSpaceRatio(),
-				aiResponse.crosswalkCount() != null ? aiResponse.crosswalkCount() : 0,
-				Boolean.TRUE.equals(aiResponse.isPedestrianOnly()),
-				Boolean.TRUE.equals(aiResponse.isNatureFriendly()),
-				Boolean.TRUE.equals(aiResponse.hasRestPoints()));
+				destination.getId(),
+				request.currentLatitude(),
+				request.currentLongitude(),
+				tmap.totalDistanceMeters(),
+				tmap.estimatedWalkTimeMinutes(),
+				tmap.estimatedSteps(),
+				f.activityLevel(),
+				tmap.encodedPolyline(),
+				f.includeRestPoints(),
+				f.notifyEcoMart(),
+				f.notifyWalkingProgress());
 		return create(createRequest);
+	}
+
+	/**
+	 * 수거함 후보 중  목표 걸음(직선 거리 기반 추정)에 가장 가까운 곳을 선택
+	 * 동점이면 현 위치에서 직선 거리가 더 짧은 수거함을 선택
+	 */
+	private CollectionLocation pickOptimalCollectionLocation(
+			List<Long> destinationIds,
+			double currentLatitude,
+			double currentLongitude,
+			ActivityLevel activityLevel) {
+		int targetSteps = targetStepsForActivity(activityLevel);
+		CollectionLocation best = null;
+		int bestScore = Integer.MAX_VALUE;
+		double bestDistanceMeters = Double.MAX_VALUE;
+
+		for (Long id : destinationIds.stream().distinct().toList()) {
+			if (id == null) {
+				continue;
+			}
+			CollectionLocation loc = collectionLocationRepository.findById(id).orElse(null);
+			if (loc == null) {
+				continue;
+			}
+			double meters = DistanceUtil.calculateDistanceMeters(
+					currentLatitude,
+					currentLongitude,
+					loc.getLatitude(),
+					loc.getLongitude());
+			int estSteps = meters > 0 ? (int) Math.round(meters / ESTIMATE_METERS_PER_STEP) : 0;
+			int score = Math.abs(estSteps - targetSteps);
+			if (score < bestScore || (score == bestScore && meters < bestDistanceMeters)) {
+				bestScore = score;
+				bestDistanceMeters = meters;
+				best = loc;
+			}
+		}
+		if (best == null) {
+			throw new IllegalArgumentException("유효한 수거함 목적지가 없습니다. destinationIds를 확인하세요.");
+		}
+		return best;
+	}
+
+	private static int targetStepsForActivity(ActivityLevel level) {
+		return switch (level) {
+			case MODERATE -> 2000;
+			case ACTIVE -> 4000;
+			case MAXIMUM -> 6000;
+		};
 	}
 
 	/**

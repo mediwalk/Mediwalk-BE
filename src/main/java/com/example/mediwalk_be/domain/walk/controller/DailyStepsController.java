@@ -3,6 +3,8 @@ package com.example.mediwalk_be.domain.walk.controller;
 import com.example.mediwalk_be.domain.walk.dto.request.AddDailyStepsRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.DailyStepsResponse;
 import com.example.mediwalk_be.domain.walk.service.DailyStepsService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,11 +16,13 @@ import java.util.Optional;
 @RestController
 @RequestMapping("/api/daily-steps")
 @RequiredArgsConstructor
+@Tag(name = "DailySteps", description = "걸음 수: 일별 걸음 수 조회 및 누적")
 public class DailyStepsController {
 
 	private final DailyStepsService dailyStepsService;
 
 	@GetMapping("/{id}")
+	@Operation(summary = "걸음 수 단건 조회")
 	public ResponseEntity<DailyStepsResponse> findById(@PathVariable Long id) {
 		return dailyStepsService.findById(id)
 				.map(DailyStepsResponse::from)
@@ -27,6 +31,7 @@ public class DailyStepsController {
 	}
 
 	@GetMapping(params = {"userId", "date"})
+	@Operation(summary = "날짜별 걸음 수 조회", description = "userId와 date(yyyy-MM-dd)로 해당 날짜의 걸음 수를 조회합니다.")
 	public ResponseEntity<DailyStepsResponse> findByUserIdAndDate(
 			@RequestParam Long userId,
 			@RequestParam LocalDate date) {
@@ -36,6 +41,7 @@ public class DailyStepsController {
 	}
 
 	@PostMapping("/get-or-create")
+	@Operation(summary = "걸음 수 조회 또는 생성", description = "해당 날짜 걸음 수 레코드가 없으면 0으로 생성 후 반환합니다.")
 	public ResponseEntity<DailyStepsResponse> getOrCreate(
 			@RequestParam Long userId,
 			@RequestParam LocalDate date) {
@@ -44,6 +50,7 @@ public class DailyStepsController {
 	}
 
 	@PostMapping("/{id}/add-steps")
+	@Operation(summary = "걸음 수 누적", description = "걸음 수를 누적합니다. 거리·칼로리는 자동 계산됩니다.")
 	public ResponseEntity<DailyStepsResponse> addSteps(
 			@PathVariable Long id,
 			@RequestBody AddDailyStepsRequest request) {
@@ -52,6 +59,7 @@ public class DailyStepsController {
 	}
 
 	@DeleteMapping("/{id}")
+	@Operation(summary = "걸음 수 레코드 삭제")
 	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
 		if (dailyStepsService.findById(id).isEmpty()) {
 			return ResponseEntity.notFound().build();

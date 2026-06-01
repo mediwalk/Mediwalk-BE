@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.mission.service;
 import com.example.mediwalk_be.domain.mission.entity.Mission;
 import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.user.entity.User;
+import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.mission.entity.enums.MissionStatus;
 import com.example.mediwalk_be.domain.mission.entity.enums.MissionType;
@@ -121,6 +122,18 @@ public class UserDailyMissionService {
 
 	public Optional<UserDailyMission> findByUserIdAndMissionIdAndMissionDate(Long userId, Long missionId, LocalDate missionDate) {
 		return userDailyMissionRepository.findByUserIdAndMissionIdAndMissionDate(userId, missionId, missionDate);
+	}
+
+	public DestinationProximityResponse checkDestinationProximity(
+			Long id,
+			double currentLatitude,
+			double currentLongitude) {
+		UserDailyMission udm = getById(id);
+		CollectionLocation destination = udm.getCollectionLocation();
+		if (destination == null) {
+			throw new IllegalArgumentException("이 미션에는 목적지(수거함)가 배정되어 있지 않습니다.");
+		}
+		return DestinationProximityResponse.from(destination, currentLatitude, currentLongitude);
 	}
 
 	@Transactional

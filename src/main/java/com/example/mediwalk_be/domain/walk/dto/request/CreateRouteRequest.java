@@ -1,24 +1,20 @@
 package com.example.mediwalk_be.domain.walk.dto.request;
 
 import com.example.mediwalk_be.domain.walk.entity.enums.ActivityLevel;
-import com.example.mediwalk_be.domain.walk.entity.enums.SlopeLevel;
 
 public record CreateRouteRequest(
-	Long userId,
-	Long userDailyMissionId,
-	Long destinationId,
-	Double startLatitude,
-	Double startLongitude,
-	Integer totalDistanceMeters,
-	Integer estimatedWalkTimeMinutes,
-	Integer estimatedSteps,
-	SlopeLevel averageSlope,
-	ActivityLevel activityLevel,
-	String routePolyline,
-	Double greenSpaceRatio,
-	Integer crosswalkCount,
-	Boolean isPedestrianOnly,
-	Boolean isNatureFriendly,
-	Boolean hasRestPoints
+		Long userId,
+		Long userDailyMissionId,
+		Long destinationId,
+		Double startLatitude,
+		Double startLongitude,
+		Integer totalDistanceMeters,
+		Integer estimatedWalkTimeMinutes,
+		Integer estimatedSteps,
+		ActivityLevel activityLevel,
+		String routePolyline,
+		Boolean hasRestPoints,
+		Boolean notifyEcoMart,
+		Boolean notifyWalkingProgress
 ) {
 }
