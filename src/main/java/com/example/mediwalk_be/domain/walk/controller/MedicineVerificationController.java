@@ -26,9 +26,10 @@ public class MedicineVerificationController {
 			summary = "폐의약품 인증",
 			description = """
 					base64 인코딩된 이미지를 Vertex AI에 전송하여 폐의약품 여부를 판정합니다.
-					- VERIFIED: 신뢰도 0.7 이상 — 인증 성공
-					- RETRY: 신뢰도 0.5~0.7 — 재촬영 요청
-					- FAILED: 신뢰도 0.5 미만 또는 미탐지 — 인증 실패
+					pill 라벨 confidence 기준 (no_pill 등 다른 클래스 점수는 사용하지 않음).
+					- VERIFIED: pill 신뢰도 0.7 이상 — 인증 성공
+					- RETRY: pill 신뢰도 0.5~0.7 — 재촬영 요청
+					- FAILED: pill 신뢰도 0.5 미만 또는 미탐지 — 인증 실패
 					"""
 	)
 	public ResponseEntity<MedicineVerificationResponse> verify(
