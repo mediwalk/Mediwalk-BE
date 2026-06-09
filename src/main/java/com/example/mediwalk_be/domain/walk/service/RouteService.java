@@ -181,8 +181,8 @@ public class RouteService {
 	private static int targetStepsForActivity(ActivityLevel level) {
 		return switch (level) {
 			case MODERATE -> 2000;
-			case ACTIVE -> 4000;
-			case MAXIMUM -> 6000;
+			case ACTIVE -> 3000;
+			case MAXIMUM -> 4000;
 		};
 	}
 
