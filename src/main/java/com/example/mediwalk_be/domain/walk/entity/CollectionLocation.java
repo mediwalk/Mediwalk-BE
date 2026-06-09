@@ -44,4 +44,11 @@ public class CollectionLocation extends BaseEntity {
 	@Column(nullable = false)
 	@Builder.Default
 	private Integer activationRadius = 20;
+
+	public void changeName(String newName) {
+		if (newName == null || newName.isBlank()) {
+			return;
+		}
+		this.name = newName.trim().length() <= 100 ? newName.trim() : newName.trim().substring(0, 100);
+	}
 }

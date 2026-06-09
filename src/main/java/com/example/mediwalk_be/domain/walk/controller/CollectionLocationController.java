@@ -5,14 +5,19 @@ import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationRespon
 import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationWithDistanceResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
+import com.example.mediwalk_be.domain.walk.dto.response.CollectionLocationImportResponse;
 import com.example.mediwalk_be.domain.walk.service.CollectionLocationService;
+import com.example.mediwalk_be.domain.walk.service.CollectionLocationXlsxImportService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
+import java.io.IOException;
 import java.util.List;
 
 @RestController
@@ -25,6 +30,25 @@ public class CollectionLocationController {
 	private static final int LIST_MAX_LIMIT = 20;
 
 	private final CollectionLocationService collectionLocationService;
+	private final CollectionLocationXlsxImportService collectionLocationXlsxImportService;
+
+	@PostMapping(value = "/import/xlsx", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+	@Operation(
+			summary = "스마트서울맵 엑셀 수거함 일괄 적재",
+			description = "스마트서울맵에서 내려받은 contents.xlsx를 업로드해 collection_locations에 저장합니다. "
+					+ "좌표가 동일한 기존 데이터는 건너뜁니다. refreshNamesOnly=true이면 좌표로 매칭해 name만 갱신합니다."
+	)
+	public ResponseEntity<CollectionLocationImportResponse> importFromXlsx(
+			@RequestPart("file") MultipartFile file,
+			@RequestParam(defaultValue = "false") boolean refreshNamesOnly) throws IOException {
+		if (file.isEmpty()) {
+			return ResponseEntity.badRequest().build();
+		}
+		return ResponseEntity.ok(collectionLocationXlsxImportService.importFromXlsx(
+				file.getInputStream(),
+				file.getOriginalFilename(),
+				refreshNamesOnly));
+	}
 
 	@GetMapping
 	@Operation(summary = "수거함 전체 조회")
