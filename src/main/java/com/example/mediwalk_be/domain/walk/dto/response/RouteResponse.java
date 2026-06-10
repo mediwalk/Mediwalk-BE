@@ -25,17 +25,18 @@ public record RouteResponse(
 		List<PointOfInterestResponse> restPoints,
 		List<AlongRoutePoiResponse> martSuggestionsAlongRoute,
 		List<AlongRoutePoiResponse> parkSuggestionsAlongRoute,
+		List<RouteSegmentResponse> routeSegments,
 		LocalDateTime generatedAt,
 		LocalDateTime completedAt,
 		LocalDateTime createdAt,
 		LocalDateTime updatedAt
 ) {
 	public static RouteResponse from(Route e) {
-		return from(e, null, List.of(), List.of());
+		return from(e, null, List.of(), List.of(), List.of());
 	}
 
 	public static RouteResponse from(Route e, List<PointOfInterestResponse> restPoints) {
-		return from(e, restPoints, List.of(), List.of());
+		return from(e, restPoints, List.of(), List.of(), List.of());
 	}
 
 	public static RouteResponse from(
@@ -43,6 +44,15 @@ public record RouteResponse(
 			List<PointOfInterestResponse> restPoints,
 			List<AlongRoutePoiResponse> martSuggestionsAlongRoute,
 			List<AlongRoutePoiResponse> parkSuggestionsAlongRoute) {
+		return from(e, restPoints, martSuggestionsAlongRoute, parkSuggestionsAlongRoute, List.of());
+	}
+
+	public static RouteResponse from(
+			Route e,
+			List<PointOfInterestResponse> restPoints,
+			List<AlongRoutePoiResponse> martSuggestionsAlongRoute,
+			List<AlongRoutePoiResponse> parkSuggestionsAlongRoute,
+			List<RouteSegmentResponse> routeSegments) {
 		return new RouteResponse(
 				e.getId(),
 				e.getUser().getId(),
@@ -62,6 +72,7 @@ public record RouteResponse(
 				restPoints != null ? restPoints : List.of(),
 				martSuggestionsAlongRoute != null ? martSuggestionsAlongRoute : List.of(),
 				parkSuggestionsAlongRoute != null ? parkSuggestionsAlongRoute : List.of(),
+				routeSegments != null ? routeSegments : List.of(),
 				e.getGeneratedAt(),
 				e.getCompletedAt(),
 				e.getCreatedAt(),

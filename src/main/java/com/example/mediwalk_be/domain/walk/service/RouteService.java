@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.walk.service;
 import com.example.mediwalk_be.domain.walk.dto.request.CreateRouteRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteFilterRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
+import com.example.mediwalk_be.domain.walk.dto.response.GeneratedRouteResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.PointOfInterestResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.TmapRoutePreviewResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
@@ -32,9 +33,7 @@ import java.util.Optional;
 @Transactional(readOnly = true)
 public class RouteService {
 
-	/** {@link TmapPedestrianRouteService} 예상 걸음 산출과 동일한 보수적 가정(미터/보) */
 	private static final double ESTIMATE_METERS_PER_STEP = 0.75;
-	/** 도심 Tmap 보행 경로는 직선 대비 약 1.3배 — 직선 목표 걸음을 이 비율로 낮춰 실제 보행 거리에 맞춤 */
 	private static final double TMAP_STRAIGHT_TO_WALK_RATIO = 1.3;
 	private static final int MAXIMUM_MAX_TMAP_DISTANCE_METERS = 3000;
 	private static final int MAX_TMAP_CANDIDATES_TO_TRY = 20;
@@ -100,7 +99,7 @@ public class RouteService {
 	}
 
 	@Transactional
-	public Route generateRoute(RouteGenerationRequest request) {
+	public GeneratedRouteResponse generateRoute(RouteGenerationRequest request) {
 		if (request.destinationIds() == null || request.destinationIds().isEmpty()) {
 			throw new IllegalArgumentException("후보 목적지(destinationIds)가 비어 있습니다.");
 		}
@@ -146,7 +145,8 @@ public class RouteService {
 				f.includeRestPoints(),
 				f.notifyEcoMart(),
 				f.notifyWalkingProgress());
-		return create(createRequest);
+		Route route = create(createRequest);
+		return new GeneratedRouteResponse(route, tmap.guideSteps() != null ? tmap.guideSteps() : List.of());
 	}
 
 
@@ -231,9 +231,6 @@ public class RouteService {
 		return (int) Math.round(straightMeters / ESTIMATE_METERS_PER_STEP);
 	}
 
-	/**
-	 * 경로의 휴식 포인트(POI) 목록 조회
-	 */
 	public List<PointOfInterestResponse> getRestPointsByRouteId(Long routeId) {
 		return pointOfInterestRepository.findByRouteIdOrderByOrderAsc(routeId).stream()
 				.map(PointOfInterestResponse::from)
