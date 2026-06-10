@@ -4,6 +4,7 @@ import com.example.mediwalk_be.domain.walk.dto.request.CreateRouteRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteFilterRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.PointOfInterestResponse;
+import com.example.mediwalk_be.domain.walk.dto.response.TmapRoutePreviewResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.entity.Route;
 import com.example.mediwalk_be.domain.walk.entity.enums.ActivityLevel;
@@ -21,6 +22,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 
@@ -33,6 +36,8 @@ public class RouteService {
 	private static final double ESTIMATE_METERS_PER_STEP = 0.75;
 	/** 도심 Tmap 보행 경로는 직선 대비 약 1.3배 — 직선 목표 걸음을 이 비율로 낮춰 실제 보행 거리에 맞춤 */
 	private static final double TMAP_STRAIGHT_TO_WALK_RATIO = 1.3;
+	private static final int MAXIMUM_MAX_TMAP_DISTANCE_METERS = 3000;
+	private static final int MAX_TMAP_CANDIDATES_TO_TRY = 20;
 
 	private final RouteRepository routeRepository;
 	private final UserRepository userRepository;
@@ -103,24 +108,29 @@ public class RouteService {
 		if (f == null) {
 			throw new IllegalArgumentException("filter는 필수입니다.");
 		}
-		CollectionLocation destination = pickOptimalCollectionLocation(
+		List<RankedCandidate> rankedCandidates = rankCollectionLocationCandidates(
 				request.destinationIds(),
 				request.currentLatitude(),
 				request.currentLongitude(),
 				f.activityLevel());
 
-		String searchOption = "0";
-		String endName = destination.getName() != null && !destination.getName().isBlank()
-				? destination.getName()
-				: "도착";
-		var tmap = tmapPedestrianRouteService.preview(
-				request.currentLatitude(),
-				request.currentLongitude(),
-				destination.getLatitude(),
-				destination.getLongitude(),
-				"출발",
-				endName,
-				searchOption);
+		CollectionLocation destination;
+		TmapRoutePreviewResponse tmap;
+		if (f.activityLevel() == ActivityLevel.MAXIMUM) {
+			var picked = pickMaximumWithinTmapCap(
+					rankedCandidates,
+					request.currentLatitude(),
+					request.currentLongitude());
+			destination = picked.location();
+			tmap = picked.tmap();
+		} else {
+			RankedCandidate best = rankedCandidates.get(0);
+			destination = best.location();
+			tmap = previewTmapRoute(
+					request.currentLatitude(),
+					request.currentLongitude(),
+					destination);
+		}
 
 		CreateRouteRequest createRequest = new CreateRouteRequest(
 				request.userId(),
@@ -139,20 +149,46 @@ public class RouteService {
 		return create(createRequest);
 	}
 
-	/**
-	 * 수거함 후보 중 목표 보행 걸음에 맞도록 직선 거리 기반 추정 걸음이 가장 가까운 곳을 선택.
-	 * Tmap 실경로가 직선보다 길어지므로 {@link #targetStepsForActivity}에서 직선 목표를 낮춘다.
-	 * 동점이면 현 위치에서 직선 거리가 더 짧은 수거함을 선택.
-	 */
-	private CollectionLocation pickOptimalCollectionLocation(
+
+	private PickedRoute pickMaximumWithinTmapCap(
+			List<RankedCandidate> rankedCandidates,
+			double currentLatitude,
+			double currentLongitude) {
+		for (RankedCandidate candidate : rankedCandidates.stream().limit(MAX_TMAP_CANDIDATES_TO_TRY).toList()) {
+			TmapRoutePreviewResponse preview = previewTmapRoute(currentLatitude, currentLongitude, candidate.location());
+			if (preview.totalDistanceMeters() <= MAXIMUM_MAX_TMAP_DISTANCE_METERS) {
+				return new PickedRoute(candidate.location(), preview);
+			}
+		}
+		throw new IllegalArgumentException(
+				"3km 이내 보행 경로로 도달 가능한 수거함을 찾지 못했습니다. 다른 위치에서 다시 시도해 주세요.");
+	}
+
+	private TmapRoutePreviewResponse previewTmapRoute(
+			double currentLatitude,
+			double currentLongitude,
+			CollectionLocation destination) {
+		String endName = destination.getName() != null && !destination.getName().isBlank()
+				? destination.getName()
+				: "도착";
+		return tmapPedestrianRouteService.preview(
+				currentLatitude,
+				currentLongitude,
+				destination.getLatitude(),
+				destination.getLongitude(),
+				"출발",
+				endName,
+				"0");
+	}
+
+
+	private List<RankedCandidate> rankCollectionLocationCandidates(
 			List<Long> destinationIds,
 			double currentLatitude,
 			double currentLongitude,
 			ActivityLevel activityLevel) {
 		int targetSteps = targetStepsForActivity(activityLevel);
-		CollectionLocation best = null;
-		int bestScore = Integer.MAX_VALUE;
-		double bestDistanceMeters = Double.MAX_VALUE;
+		List<RankedCandidate> ranked = new ArrayList<>();
 
 		for (Long id : destinationIds.stream().distinct().toList()) {
 			if (id == null) {
@@ -169,16 +205,20 @@ public class RouteService {
 					loc.getLongitude());
 			int estSteps = meters > 0 ? (int) Math.round(meters / ESTIMATE_METERS_PER_STEP) : 0;
 			int score = Math.abs(estSteps - targetSteps);
-			if (score < bestScore || (score == bestScore && meters < bestDistanceMeters)) {
-				bestScore = score;
-				bestDistanceMeters = meters;
-				best = loc;
-			}
+			ranked.add(new RankedCandidate(loc, score, meters));
 		}
-		if (best == null) {
+		if (ranked.isEmpty()) {
 			throw new IllegalArgumentException("유효한 수거함 목적지가 없습니다. destinationIds를 확인하세요.");
 		}
-		return best;
+		ranked.sort(Comparator.comparingInt(RankedCandidate::score)
+				.thenComparingDouble(RankedCandidate::straightMeters));
+		return ranked;
+	}
+
+	private record RankedCandidate(CollectionLocation location, int score, double straightMeters) {
+	}
+
+	private record PickedRoute(CollectionLocation location, TmapRoutePreviewResponse tmap) {
 	}
 
 	private static int targetStepsForActivity(ActivityLevel level) {

@@ -36,8 +36,8 @@ public class RouteController {
 
 	@PostMapping("/generate")
 	@Operation(summary = "맞춤 경로 생성",
-			description = "destinationIds 후보 중 filter.activityLevel(목표 Tmap 보행 약 500m/1.2km/2.5km, 직선 선택 시 우회 보정)에 맞는 수거함을 고른 뒤 Tmap 보행 경로를 산출합니다. "
-					+ "notifyEcoMart·hasRestPoints가 참이면 경로 폴리라인을 따라 Tmap 주변 POI로 마트·공원 후보 목록을 같이 채웁니다(키·카테고리 설정 필요).")
+			description = "destinationIds 후보 중 filter.activityLevel에 맞는 수거함을 고른 뒤 Tmap 보행 경로를 산출합니다. "
+					+ "notifyEcoMart·hasRestPoints가 참이면 경로 폴리라인을 따라 Tmap 주변 POI로 마트·공원 후보 목록을 같이 채웁니다.")
 	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
 		Route route = routeService.generateRoute(request);
 		return ResponseEntity.status(HttpStatus.CREATED)
