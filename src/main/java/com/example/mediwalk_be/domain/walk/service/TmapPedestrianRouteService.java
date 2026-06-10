@@ -48,6 +48,7 @@ public class TmapPedestrianRouteService {
 				minutes,
 				steps,
 				encoded,
-				latLng.size());
+				latLng.size(),
+				route.guideSteps() != null ? route.guideSteps() : List.of());
 	}
 }
