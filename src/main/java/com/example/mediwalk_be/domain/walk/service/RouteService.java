@@ -31,6 +31,8 @@ public class RouteService {
 
 	/** {@link TmapPedestrianRouteService} 예상 걸음 산출과 동일한 보수적 가정(미터/보) */
 	private static final double ESTIMATE_METERS_PER_STEP = 0.75;
+	/** 도심 Tmap 보행 경로는 직선 대비 약 1.3배 — 직선 목표 걸음을 이 비율로 낮춰 실제 보행 거리에 맞춤 */
+	private static final double TMAP_STRAIGHT_TO_WALK_RATIO = 1.3;
 
 	private final RouteRepository routeRepository;
 	private final UserRepository userRepository;
@@ -138,8 +140,9 @@ public class RouteService {
 	}
 
 	/**
-	 * 수거함 후보 중  목표 걸음(직선 거리 기반 추정)에 가장 가까운 곳을 선택
-	 * 동점이면 현 위치에서 직선 거리가 더 짧은 수거함을 선택
+	 * 수거함 후보 중 목표 보행 걸음에 맞도록 직선 거리 기반 추정 걸음이 가장 가까운 곳을 선택.
+	 * Tmap 실경로가 직선보다 길어지므로 {@link #targetStepsForActivity}에서 직선 목표를 낮춘다.
+	 * 동점이면 현 위치에서 직선 거리가 더 짧은 수거함을 선택.
 	 */
 	private CollectionLocation pickOptimalCollectionLocation(
 			List<Long> destinationIds,
@@ -179,11 +182,13 @@ public class RouteService {
 	}
 
 	private static int targetStepsForActivity(ActivityLevel level) {
-		return switch (level) {
-			case MODERATE -> 2000;
-			case ACTIVE -> 3000;
-			case MAXIMUM -> 4000;
+		int targetWalkingMeters = switch (level) {
+			case MODERATE -> 500;
+			case ACTIVE -> 1200;
+			case MAXIMUM -> 2500;
 		};
+		double straightMeters = targetWalkingMeters / TMAP_STRAIGHT_TO_WALK_RATIO;
+		return (int) Math.round(straightMeters / ESTIMATE_METERS_PER_STEP);
 	}
 
 	/**
