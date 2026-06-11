@@ -25,7 +25,7 @@ public class RewardTransactionController {
 	private final RewardTransactionService rewardTransactionService;
 
 	@PostMapping
-	@Operation(summary = "리워드 거래 생성", description = "리워드 적립/환급 거래를 생성합니다. 환급 시 최소 금액 및 계좌 정보 검증이 적용됩니다.")
+	@Operation(summary = "리워드 환급 신청", description = "리워드 환급(REFUND) 거래를 생성합니다. 최소 금액 및 계좌 정보 검증이 적용됩니다. 적립(ACCUMULATION) 내역은 이벤트 생성 시 자동으로 처리되며 이 API로는 생성할 수 없습니다.")
 	public ResponseEntity<RewardTransactionResponse> create(@RequestBody CreateRewardTransactionRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(RewardTransactionResponse.from(rewardTransactionService.create(request)));
