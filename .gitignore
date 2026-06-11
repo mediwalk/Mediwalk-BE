@@ -39,6 +39,9 @@ out/
 ### VS Code ###
 .vscode/
 
+### AI / local tools ###
+CLAUDE.md
+
 ### Logs & temp ###
 *.log
 logs/
