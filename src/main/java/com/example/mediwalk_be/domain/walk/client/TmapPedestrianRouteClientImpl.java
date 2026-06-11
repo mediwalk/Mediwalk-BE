@@ -1,6 +1,7 @@
 package com.example.mediwalk_be.domain.walk.client;
 
 import com.example.mediwalk_be.domain.walk.client.dto.tmap.TmapPedestrianRouteResult;
+import com.example.mediwalk_be.domain.walk.client.dto.tmap.TmapRouteGuideStep;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.beans.factory.annotation.Value;
@@ -122,11 +123,18 @@ public class TmapPedestrianRouteClientImpl implements TmapPedestrianRouteClient 
 			int totalDistance = 0;
 			int totalTime = 0;
 			List<double[]> path = new ArrayList<>();
+			List<TmapRouteGuideStep> guideSteps = new ArrayList<>();
+			int cumulativeMeters = 0;
 
 			for (JsonNode feature : features) {
 				JsonNode geometry = feature.get("geometry");
-				if (geometry != null && geometry.has("type")
-						&& "LineString".equals(geometry.get("type").asText())) {
+				JsonNode props = feature.get("properties");
+				if (geometry == null || !geometry.has("type")) {
+					continue;
+				}
+				String geomType = geometry.get("type").asText();
+
+				if ("LineString".equals(geomType)) {
 					JsonNode coordinates = geometry.get("coordinates");
 					if (coordinates != null && coordinates.isArray()) {
 						for (JsonNode pt : coordinates) {
@@ -137,14 +145,30 @@ public class TmapPedestrianRouteClientImpl implements TmapPedestrianRouteClient 
 							}
 						}
 					}
-				}
-				JsonNode props = feature.get("properties");
-				if (props != null) {
+					if (props != null) {
+						int segDist = props.has("distance")
+								? (int) Math.round(props.get("distance").asDouble())
+								: 0;
+						String instruction = buildLineInstruction(props);
+						if (instruction != null) {
+							int along = cumulativeMeters + Math.max(segDist / 2, 0);
+							guideSteps.add(new TmapRouteGuideStep(along, instruction));
+						}
+						cumulativeMeters += Math.max(segDist, 0);
+					}
+				} else if ("Point".equals(geomType) && props != null) {
 					if (props.has("totalDistance")) {
 						totalDistance = (int) Math.round(props.get("totalDistance").asDouble());
 					}
 					if (props.has("totalTime")) {
 						totalTime = (int) Math.round(props.get("totalTime").asDouble());
+					}
+					String pointType = textOrEmpty(props.get("pointType"));
+					if (!isDestinationPoint(pointType)) {
+						String instruction = buildPointInstruction(props);
+						if (instruction != null) {
+							guideSteps.add(new TmapRouteGuideStep(cumulativeMeters, instruction));
+						}
 					}
 				}
 			}
@@ -152,13 +176,71 @@ public class TmapPedestrianRouteClientImpl implements TmapPedestrianRouteClient 
 			if (path.isEmpty()) {
 				throw new IllegalStateException("Tmap 응답에 LineString 좌표가 없습니다.");
 			}
+			if (totalDistance <= 0) {
+				totalDistance = cumulativeMeters;
+			}
 
-			return new TmapPedestrianRouteResult(totalDistance, totalTime, path);
+			return new TmapPedestrianRouteResult(totalDistance, totalTime, path, List.copyOf(guideSteps));
 		} catch (IllegalStateException e) {
 			throw e;
 		} catch (Exception e) {
 			throw new IllegalStateException("Tmap 응답 파싱 실패: " + e.getMessage(), e);
 		}
+	}
+
+	private static String buildLineInstruction(JsonNode props) {
+		String description = cleanInstruction(textOrEmpty(props.get("description")));
+		String roadName = textOrEmpty(props.get("name"));
+		if (!description.isBlank() && isUsefulInstruction(description)) {
+			return description;
+		}
+		if (!roadName.isBlank()) {
+			int dist = props.has("distance") ? (int) Math.round(props.get("distance").asDouble()) : 0;
+			if (dist > 0) {
+				return roadName + "를 따라 " + dist + "m 이동";
+			}
+			return roadName + "를 따라 이동";
+		}
+		return null;
+	}
+
+	private static String buildPointInstruction(JsonNode props) {
+		String description = cleanInstruction(textOrEmpty(props.get("description")));
+		if (!description.isBlank() && isUsefulInstruction(description)) {
+			return description;
+		}
+		String nextRoad = textOrEmpty(props.get("nextRoadName"));
+		if (!nextRoad.isBlank()) {
+			return nextRoad + " 방향으로 이동";
+		}
+		return null;
+	}
+
+	private static boolean isDestinationPoint(String pointType) {
+		return "E".equals(pointType) || "EP".equals(pointType);
+	}
+
+	private static String cleanInstruction(String raw) {
+		if (raw == null || raw.isBlank()) {
+			return "";
+		}
+		String s = raw.trim();
+		while (s.startsWith(",")) {
+			s = s.substring(1).trim();
+		}
+		return s;
+	}
+
+	private static boolean isUsefulInstruction(String instruction) {
+		if (instruction.isBlank() || instruction.length() < 2) {
+			return false;
+		}
+		String compact = instruction.replaceAll("\\s+", "");
+		return !compact.matches("^[0-9.,mM]+$");
+	}
+
+	private static String textOrEmpty(JsonNode node) {
+		return node == null || node.isNull() ? "" : node.asText("").trim();
 	}
 
 	private static String normalizeApiKey(String raw) {

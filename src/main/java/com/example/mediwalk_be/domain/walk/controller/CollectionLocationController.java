@@ -27,7 +27,9 @@ import java.util.List;
 public class CollectionLocationController {
 
 	private static final int NEARBY_RADIUS_METERS = 3000;
-	private static final int LIST_MAX_LIMIT = 20;
+	private static final int NEARBY_ABSOLUTE_MAX_LIMIT = 500;
+	private static final int SEARCH_DEFAULT_LIMIT = 20;
+	private static final int SEARCH_ABSOLUTE_MAX_LIMIT = 100;
 
 	private final CollectionLocationService collectionLocationService;
 	private final CollectionLocationXlsxImportService collectionLocationXlsxImportService;
@@ -59,18 +61,22 @@ public class CollectionLocationController {
 	}
 
 	@GetMapping("/nearby")
-	@Operation(summary = "근처 수거함 조회", description = "현재 위치 기준 3km 이내 수거함을 거리순으로 반환합니다. limit 파라미터로 최대 개수를 제한할 수 있습니다.")
+	@Operation(
+			summary = "근처 수거함 조회",
+			description = "현재 위치 기준 3km 이내 수거함을 거리순으로 반환합니다."
+	)
 	public List<CollectionLocationWithDistanceResponse> findNearby(
 			@RequestParam double latitude,
 			@RequestParam double longitude,
 			@RequestParam(required = false) Integer limit) {
-		int effectiveLimit = limit != null && limit > 0
-				? Math.min(limit, LIST_MAX_LIMIT)
-				: LIST_MAX_LIMIT;
-		return collectionLocationService.findWithinRadiusOrderByDistance(latitude, longitude, NEARBY_RADIUS_METERS).stream()
-				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
-				.limit(effectiveLimit)
-				.toList();
+		var stream = collectionLocationService
+				.findWithinRadiusOrderByDistance(latitude, longitude, NEARBY_RADIUS_METERS)
+				.stream()
+				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude));
+		if (limit != null && limit > 0) {
+			return stream.limit(Math.min(limit, NEARBY_ABSOLUTE_MAX_LIMIT)).toList();
+		}
+		return stream.toList();
 	}
 
 	@GetMapping("/search")
@@ -81,8 +87,8 @@ public class CollectionLocationController {
 			@RequestParam double longitude,
 			@RequestParam(required = false) Integer limit) {
 		int effectiveLimit = limit != null && limit > 0
-				? Math.min(limit, LIST_MAX_LIMIT)
-				: LIST_MAX_LIMIT;
+				? Math.min(limit, SEARCH_ABSOLUTE_MAX_LIMIT)
+				: SEARCH_DEFAULT_LIMIT;
 		return collectionLocationService.searchByKeyword(q.trim(), effectiveLimit).stream()
 				.map(location -> CollectionLocationWithDistanceResponse.from(location, latitude, longitude))
 				.toList();

@@ -5,6 +5,7 @@ import java.util.List;
 public record TmapPedestrianRouteResult(
 		int totalDistanceMeters,
 		int totalTimeSeconds,
-		List<double[]> pathLatLng // [lat, lng]
+		List<double[]> pathLatLng, // [lat, lng]
+		List<TmapRouteGuideStep> guideSteps
 ) {
 }

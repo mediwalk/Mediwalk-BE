@@ -1,6 +1,9 @@
 package com.example.mediwalk_be.domain.walk.dto.response;
 
+import com.example.mediwalk_be.domain.walk.client.dto.tmap.TmapRouteGuideStep;
 import io.swagger.v3.oas.annotations.media.Schema;
+
+import java.util.List;
 
 @Schema(description = "Tmap 보행 경로 미리보기 결과")
 public record TmapRoutePreviewResponse(
@@ -15,6 +18,8 @@ public record TmapRoutePreviewResponse(
 		@Schema(description = "Google Polyline Encoding 형식 (lat,lng 순서)")
 		String encodedPolyline,
 		@Schema(description = "경로 꼭짓점 수 (디버그)")
-		int coordinateCount
+		int coordinateCount,
+		@Schema(description = "Tmap 경로 안내 단계 (polyline 진행 거리 포함)")
+		List<TmapRouteGuideStep> guideSteps
 ) {
 }
