@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.mission.service;
 import com.example.mediwalk_be.domain.mission.entity.Achievement;
 import com.example.mediwalk_be.domain.mission.entity.enums.AchievementCategory;
 import com.example.mediwalk_be.domain.mission.repository.AchievementRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class AchievementService {
 
 	public Achievement getById(Long id) {
 		return achievementRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Achievement not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("Achievement not found: id=" + id));
 	}
 
 	public List<Achievement> findAll() {

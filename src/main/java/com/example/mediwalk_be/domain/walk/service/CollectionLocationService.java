@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.walk.service;
 import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
@@ -24,7 +25,7 @@ public class CollectionLocationService {
 
 	public CollectionLocation getById(Long id) {
 		return collectionLocationRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("CollectionLocation not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("CollectionLocation not found: id=" + id));
 	}
 
 	public DestinationProximityResponse checkDestinationProximity(

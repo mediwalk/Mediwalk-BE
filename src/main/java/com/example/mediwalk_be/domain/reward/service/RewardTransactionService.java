@@ -8,6 +8,7 @@ import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class RewardTransactionService {
 
 	public RewardTransaction getById(Long id) {
 		return rewardTransactionRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("RewardTransaction not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("RewardTransaction not found: id=" + id));
 	}
 
 	public List<RewardTransaction> findByUserIdOrderByTransactionDateDesc(Long userId, Pageable pageable) {
@@ -205,7 +206,7 @@ public class RewardTransactionService {
 	@Transactional
 	public RewardTransaction create(CreateRewardTransactionRequest request) {
 		User user = userRepository.findById(request.userId())
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + request.userId()));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + request.userId()));
 
 		if (request.transactionType() != RewardTransactionType.REFUND) {
 			throw new IllegalArgumentException("리워드 거래 생성은 환급(REFUND)만 지원합니다. 적립 내역은 이벤트 생성을 통해 자동으로 처리됩니다.");

@@ -4,6 +4,7 @@ import com.example.mediwalk_be.domain.common.entity.BaseEntity;
 import com.example.mediwalk_be.domain.user.entity.enums.Gender;
 import com.example.mediwalk_be.domain.user.entity.enums.UserRole;
 import com.example.mediwalk_be.domain.user.entity.enums.UserStatus;
+import com.example.mediwalk_be.exception.ConflictException;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -89,7 +90,7 @@ public class User extends BaseEntity {
 			return;
 		}
 		if (this.firebaseUid != null && !this.firebaseUid.equals(uid)) {
-			throw new IllegalStateException("Firebase uid already set for user id=" + this.id);
+			throw new ConflictException("Firebase uid already set for user id=" + this.id);
 		}
 		this.firebaseUid = uid;
 	}

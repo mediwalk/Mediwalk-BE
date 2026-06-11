@@ -17,6 +17,7 @@ import com.example.mediwalk_be.domain.walk.repository.RouteRepository;
 import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
 import com.example.mediwalk_be.domain.mission.repository.UserDailyMissionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -51,7 +52,7 @@ public class RouteService {
 
 	public Route getById(Long id) {
 		return routeRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Route not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("Route not found: id=" + id));
 	}
 
 	public List<Route> findByUserIdOrderByGeneratedAtDesc(Long userId, Pageable pageable) {
@@ -67,9 +68,9 @@ public class RouteService {
 	@Transactional
 	public Route create(CreateRouteRequest request) {
 		User user = userRepository.findById(request.userId())
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + request.userId()));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + request.userId()));
 		CollectionLocation destination = collectionLocationRepository.findById(request.destinationId())
-				.orElseThrow(() -> new IllegalArgumentException("CollectionLocation not found: id=" + request.destinationId()));
+				.orElseThrow(() -> new NotFoundException("CollectionLocation not found: id=" + request.destinationId()));
 		UserDailyMission userDailyMission = request.userDailyMissionId() != null
 				? userDailyMissionRepository.findById(request.userDailyMissionId()).orElse(null)
 				: null;

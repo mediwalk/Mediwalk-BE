@@ -12,6 +12,7 @@ import com.example.mediwalk_be.domain.mission.repository.MissionRepository;
 import com.example.mediwalk_be.domain.mission.repository.UserDailyMissionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -40,7 +41,7 @@ public class UserDailyMissionService {
 
 	public UserDailyMission getById(Long id) {
 		return userDailyMissionRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("UserDailyMission not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("UserDailyMission not found: id=" + id));
 	}
 
 	public List<UserDailyMission> findByUserIdAndMissionDate(Long userId, LocalDate missionDate) {
@@ -60,7 +61,7 @@ public class UserDailyMissionService {
 			throw new IllegalArgumentException("ensureCreated는 missionDate가 오늘인 경우에만 사용할 수 있습니다.");
 		}
 		userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + userId));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + userId));
 
 		List<UserDailyMission> existing = userDailyMissionRepository.findByUserIdAndMissionDate(userId, missionDate);
 		if (hasMissionType(existing, MissionType.WASTE_MEDICINE_COLLECTION)
@@ -144,9 +145,9 @@ public class UserDailyMissionService {
 	@Transactional
 	public UserDailyMission create(Long userId, Long missionId, Long collectionLocationId, LocalDate missionDate) {
 		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + userId));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + userId));
 		Mission mission = missionRepository.findById(missionId)
-				.orElseThrow(() -> new IllegalArgumentException("Mission not found: id=" + missionId));
+				.orElseThrow(() -> new NotFoundException("Mission not found: id=" + missionId));
 		CollectionLocation collectionLocation = collectionLocationId != null
 				? collectionLocationRepository.findById(collectionLocationId).orElse(null)
 				: null;

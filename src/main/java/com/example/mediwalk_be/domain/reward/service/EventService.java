@@ -21,6 +21,7 @@ import com.example.mediwalk_be.domain.mission.service.UserDailyMissionService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
 import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -56,7 +57,7 @@ public class EventService {
 
 	public Event getById(Long id) {
 		return eventRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Event not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("Event not found: id=" + id));
 	}
 
 	public List<Event> findByUserIdOrderByEventDateTimeDesc(Long userId, Pageable pageable) {
@@ -87,7 +88,7 @@ public class EventService {
 	@Transactional
 	public EventCreateResponse create(CreateEventRequest request) {
 		User user = userRepository.findById(request.userId())
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + request.userId()));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + request.userId()));
 		CollectionLocation collectionLocation = request.collectionLocationId() != null
 				? collectionLocationRepository.findById(request.collectionLocationId()).orElse(null)
 				: null;

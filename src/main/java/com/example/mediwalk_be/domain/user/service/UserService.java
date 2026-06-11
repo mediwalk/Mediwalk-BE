@@ -5,6 +5,7 @@ import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class UserService {
 
 	public User getById(Long id) {
 		return userRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + id));
 	}
 
 	public Optional<User> findByEmail(String email) {

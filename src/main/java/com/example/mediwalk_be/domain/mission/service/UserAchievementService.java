@@ -6,6 +6,7 @@ import com.example.mediwalk_be.domain.mission.entity.UserAchievement;
 import com.example.mediwalk_be.domain.mission.repository.AchievementRepository;
 import com.example.mediwalk_be.domain.mission.repository.UserAchievementRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,7 @@ public class UserAchievementService {
 
 	public UserAchievement getById(Long id) {
 		return userAchievementRepository.findByIdFetchingAchievement(id)
-				.orElseThrow(() -> new IllegalArgumentException("UserAchievement not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("UserAchievement not found: id=" + id));
 	}
 
 	public List<UserAchievement> findByUserId(Long userId) {
@@ -51,9 +52,9 @@ public class UserAchievementService {
 			return existing.get();
 		}
 		User user = userRepository.findById(userId)
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + userId));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + userId));
 		Achievement achievement = achievementRepository.findById(achievementId)
-				.orElseThrow(() -> new IllegalArgumentException("Achievement not found: id=" + achievementId));
+				.orElseThrow(() -> new NotFoundException("Achievement not found: id=" + achievementId));
 		UserAchievement ua = UserAchievement.builder()
 				.user(user)
 				.achievement(achievement)
