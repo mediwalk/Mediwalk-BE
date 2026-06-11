@@ -17,7 +17,7 @@ public class CorsProperties {
 	 * 쉼표 구분. 환경 변수 {@code CORS_ALLOWED_ORIGINS} 로 덮어쓸 수 있음.
 	 */
 	private String allowedOrigins =
-			"https://mediwalk.site,https://www.mediwalk.site,"
+			"https://mediwalk.site,https://www.mediwalk.site,https://api.mediwalk.site,"
 					+ "http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173";
 
 	public List<String> resolvedAllowedOrigins() {

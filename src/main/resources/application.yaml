@@ -1,6 +1,6 @@
 app:
   cors:
-    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://mediwalk.site,https://www.mediwalk.site,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:https://mediwalk.site,https://www.mediwalk.site,https://api.mediwalk.site,http://localhost:5173,http://localhost:3000,http://127.0.0.1:5173}
 
   tmap:
     api-key: ${TMAP_APP_KEY:}
@@ -15,6 +15,7 @@ app:
     poi-search-count-per-call: 18   # per-center count (최대 50)
     # 폴리라인(선분)까지 최단거리 순으로 자를 때 카테고리당 최대 개수 (기본 1 = 마트·공원 각 1곳)
     poi-max-suggestions-per-category: 1
+    poi-max-distance-to-polyline-meters: 200 # routeSegments 마트·공원 포함: 폴리라인까지 이 거리 이내만
 
   ai:
     medicine-verification:

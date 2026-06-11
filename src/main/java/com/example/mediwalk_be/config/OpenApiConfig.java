@@ -2,6 +2,7 @@ package com.example.mediwalk_be.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;
+import io.swagger.v3.oas.models.servers.Server;
 import io.swagger.v3.oas.models.media.ArraySchema;
 import io.swagger.v3.oas.models.media.IntegerSchema;
 import io.swagger.v3.oas.models.media.ObjectSchema;
@@ -17,6 +18,8 @@ public class OpenApiConfig {
 	@Bean
 	public OpenAPI mediwalkOpenAPI() {
 		return new OpenAPI()
+				.addServersItem(new Server().url("https://api.mediwalk.site").description("Production (HTTPS)"))
+				.addServersItem(new Server().url("http://localhost:8080").description("Local"))
 				.info(new Info()
 						.title("MediWalk API")
 						.description("폐의약품 수거 + 운동 리워드 앱 백엔드 API. 에러 시 모든 API는 ErrorResponse 형식으로 응답합니다.")
