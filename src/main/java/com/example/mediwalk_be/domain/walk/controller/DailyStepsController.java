@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.walk.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
 import com.example.mediwalk_be.domain.walk.dto.request.AddDailyStepsRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.DailyStepsResponse;
 import com.example.mediwalk_be.domain.walk.service.DailyStepsService;
@@ -9,6 +10,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -31,12 +33,12 @@ public class DailyStepsController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@GetMapping(params = {"userId", "date"})
-	@Operation(summary = "날짜별 걸음 수 조회", description = "userId와 date(yyyy-MM-dd)로 해당 날짜의 걸음 수를 조회합니다.")
+	@GetMapping(params = "date")
+	@Operation(summary = "날짜별 걸음 수 조회", description = "date(yyyy-MM-dd)로 현재 사용자의 해당 날짜 걸음 수를 조회합니다.")
 	public ResponseEntity<DailyStepsResponse> findByUserIdAndDate(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam LocalDate date) {
-		Optional<DailyStepsResponse> result = dailyStepsService.findByUserIdAndDate(userId, date)
+		Optional<DailyStepsResponse> result = dailyStepsService.findByUserIdAndDate(currentUser.userId(), date)
 				.map(DailyStepsResponse::from);
 		return result.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
 	}
@@ -44,9 +46,9 @@ public class DailyStepsController {
 	@PostMapping("/get-or-create")
 	@Operation(summary = "걸음 수 조회 또는 생성", description = "해당 날짜 걸음 수 레코드가 없으면 0으로 생성 후 반환합니다.")
 	public ResponseEntity<DailyStepsResponse> getOrCreate(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam LocalDate date) {
-		var ds = dailyStepsService.getOrCreate(userId, date);
+		var ds = dailyStepsService.getOrCreate(currentUser.userId(), date);
 		return ResponseEntity.status(HttpStatus.CREATED).body(DailyStepsResponse.from(ds));
 	}
 

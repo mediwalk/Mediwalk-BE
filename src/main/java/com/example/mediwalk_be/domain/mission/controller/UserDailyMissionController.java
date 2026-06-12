@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
 import com.example.mediwalk_be.domain.mission.dto.request.CreateUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserDailyMissionResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
@@ -10,6 +11,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -36,14 +38,15 @@ public class UserDailyMissionController {
 	}
 
 	@Operation(summary = "일일 미션 목록", description = "missionDate가 오늘이면 폐의약품 수거·운동 미션이 없을 경우 자동 생성 후 반환합니다. 선택적으로 현재 위치를 전달하면 목적지까지 거리/도보시간을 계산합니다.")
-	@GetMapping(params = {"userId", "missionDate"})
+	@GetMapping(params = "missionDate")
 	public List<UserDailyMissionResponse> findByUserIdAndMissionDate(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam LocalDate missionDate,
 			@Parameter(description = "현재 위도 (선택). 목록 항목의 distanceMeters 등 계산에 사용")
 			@RequestParam(required = false) Double currentLatitude,
 			@Parameter(description = "현재 경도 (선택). 목록 항목의 distanceMeters 등 계산에 사용")
 			@RequestParam(required = false) Double currentLongitude) {
+		Long userId = currentUser.userId();
 		if (missionDate.equals(LocalDate.now())) {
 			userDailyMissionService.ensureTodayMissions(userId, missionDate, currentLatitude, currentLongitude);
 		}
@@ -54,9 +57,11 @@ public class UserDailyMissionController {
 
 	@PostMapping
 	@Operation(summary = "일일 미션 수동 생성", description = "특정 날짜·미션 템플릿으로 일일 미션을 직접 생성합니다. 오늘 미션은 목록 조회 시 자동 생성됩니다.")
-	public ResponseEntity<UserDailyMissionResponse> create(@RequestBody CreateUserDailyMissionRequest request) {
+	public ResponseEntity<UserDailyMissionResponse> create(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@RequestBody CreateUserDailyMissionRequest request) {
 		var saved = userDailyMissionService.create(
-				request.userId(),
+				currentUser.userId(),
 				request.missionId(),
 				request.collectionLocationId(),
 				request.missionDate()

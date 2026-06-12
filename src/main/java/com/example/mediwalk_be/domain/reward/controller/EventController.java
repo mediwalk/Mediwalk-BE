@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.reward.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
 import com.example.mediwalk_be.domain.reward.dto.request.CreateEventRequest;
 import com.example.mediwalk_be.domain.reward.dto.response.EventCreateResponse;
 import com.example.mediwalk_be.domain.reward.dto.response.EventResponse;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,9 +35,11 @@ public class EventController {
 					처리된 미션(userDailyMissionId, userDailyMissionStatus)이 포함됩니다.
 					"""
 	)
-	public ResponseEntity<EventCreateResponse> create(@RequestBody CreateEventRequest request) {
+	public ResponseEntity<EventCreateResponse> create(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@RequestBody CreateEventRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(eventService.create(request));
+				.body(eventService.create(currentUser.userId(), request));
 	}
 
 	@GetMapping("/{id}")
@@ -47,14 +51,14 @@ public class EventController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@GetMapping(params = "userId")
-	@Operation(summary = "이벤트 목록 조회", description = "사용자 이벤트 목록을 최신순으로 조회합니다. eventType 전달 시 해당 타입만 필터링됩니다.")
+	@GetMapping
+	@Operation(summary = "이벤트 목록 조회", description = "현재 사용자의 이벤트 목록을 최신순으로 조회합니다. eventType 전달 시 해당 타입만 필터링됩니다.")
 	public List<EventResponse> findByUserId(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam(required = false) EventType eventType,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return eventService.findByUserIdWithOptionalEventType(userId, eventType, PageRequest.of(page, size)).stream()
+		return eventService.findByUserIdWithOptionalEventType(currentUser.userId(), eventType, PageRequest.of(page, size)).stream()
 				.map(EventResponse::from)
 				.toList();
 	}

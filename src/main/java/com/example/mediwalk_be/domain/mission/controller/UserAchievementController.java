@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
 import com.example.mediwalk_be.domain.mission.dto.request.AddUserAchievementProgressRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserAchievementResponse;
 import com.example.mediwalk_be.domain.mission.service.UserAchievementService;
@@ -8,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,20 +31,20 @@ public class UserAchievementController {
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@GetMapping(params = "userId")
-	@Operation(summary = "사용자 업적 목록 조회", description = "특정 사용자의 모든 업적 진행도를 반환합니다. 앱에서는 reward-main API 사용을 권장합니다.")
-	public List<UserAchievementResponse> findByUserId(@RequestParam Long userId) {
-		return userAchievementService.findByUserId(userId).stream()
+	@GetMapping
+	@Operation(summary = "사용자 업적 목록 조회", description = "현재 사용자의 모든 업적 진행도를 반환합니다. 앱에서는 reward-main API 사용을 권장합니다.")
+	public List<UserAchievementResponse> findByUserId(@AuthenticationPrincipal AuthenticatedUser currentUser) {
+		return userAchievementService.findByUserId(currentUser.userId()).stream()
 				.map(UserAchievementResponse::from)
 				.toList();
 	}
 
 	@PostMapping("/get-or-create")
-	@Operation(summary = "사용자 업적 조회 또는 생성", description = "userId·achievementId 조합의 진행 레코드가 없으면 생성합니다.")
+	@Operation(summary = "사용자 업적 조회 또는 생성", description = "achievementId에 대한 현재 사용자의 진행 레코드가 없으면 생성합니다.")
 	public ResponseEntity<UserAchievementResponse> getOrCreate(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam Long achievementId) {
-		var ua = userAchievementService.getOrCreate(userId, achievementId);
+		var ua = userAchievementService.getOrCreate(currentUser.userId(), achievementId);
 		return ResponseEntity.status(HttpStatus.CREATED).body(UserAchievementResponse.from(ua));
 	}
 
