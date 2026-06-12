@@ -8,6 +8,7 @@ import com.example.mediwalk_be.domain.reward.entity.enums.RewardTransactionType;
 import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.reward.repository.RewardTransactionRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class RewardTransactionService {
 
 	public RewardTransaction getById(Long id) {
 		return rewardTransactionRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("RewardTransaction not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("RewardTransaction not found: id=" + id));
 	}
 
 	public List<RewardTransaction> findByUserIdOrderByTransactionDateDesc(Long userId, Pageable pageable) {
@@ -201,62 +202,48 @@ public class RewardTransactionService {
 		return rewardTransactionRepository.save(rewardTransaction);
 	}
 
-	/** 환급 신청. 최소 10,000원, 사용자 잔액 검증 */
+	/** 환급 신청. 최소 10,000원, 사용자 잔액 검증. 적립(ACCUMULATION)은 이벤트 생성 시 EventService에서만 처리하므로 이 메서드는 REFUND만 허용한다. */
 	@Transactional
 	public RewardTransaction create(CreateRewardTransactionRequest request) {
 		User user = userRepository.findById(request.userId())
-				.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + request.userId()));
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + request.userId()));
 
-		if (request.transactionType() == RewardTransactionType.REFUND) {
-			if (request.bankName() == null || request.bankName().isBlank()) {
-				throw new IllegalArgumentException("환급 시 은행명은 필수입니다.");
-			}
-			if (request.accountNumberMasked() == null || request.accountNumberMasked().isBlank()) {
-				throw new IllegalArgumentException("환급 시 계좌번호는 필수입니다.");
-			}
-
-			int refundAmount = request.amount() != null ? request.amount() : 0;
-			if (refundAmount > 0) {
-				refundAmount = -refundAmount;
-			}
-			if (refundAmount > -10_000) {
-				throw new IllegalArgumentException("환급 최소 금액은 10,000원입니다.");
-			}
-			int currentTotalReward = user.getTotalAccumulatedReward() != null ? user.getTotalAccumulatedReward() : 0;
-			if (currentTotalReward + refundAmount < 0) {
-				throw new IllegalArgumentException("잔액이 부족합니다.");
-			}
-			user.addAccumulatedReward(refundAmount);
-			LocalDateTime transactionDate = request.transactionDate() != null ? request.transactionDate() : LocalDateTime.now();
-			RewardTransaction tx = RewardTransaction.builder()
-					.user(user)
-					.event(null)
-					.amount(refundAmount)
-					.transactionType(RewardTransactionType.REFUND)
-					.transactionDate(transactionDate)
-					.description(request.description() != null ? request.description() : "리워드 환급")
-					.bankName(request.bankName())
-					.accountNumberMasked(request.accountNumberMasked())
-					.build();
-			RewardTransaction saved = rewardTransactionRepository.save(tx);
-			achievementProgressService.syncRewardAmountAchievements(user);
-			return saved;
+		if (request.transactionType() != RewardTransactionType.REFUND) {
+			throw new IllegalArgumentException("리워드 거래 생성은 환급(REFUND)만 지원합니다. 적립 내역은 이벤트 생성을 통해 자동으로 처리됩니다.");
+		}
+		if (request.bankName() == null || request.bankName().isBlank()) {
+			throw new IllegalArgumentException("환급 시 은행명은 필수입니다.");
+		}
+		if (request.accountNumberMasked() == null || request.accountNumberMasked().isBlank()) {
+			throw new IllegalArgumentException("환급 시 계좌번호는 필수입니다.");
 		}
 
-		// ACCUMULATION은 Event 생성 시 EventService에서 처리
-		int amount = request.amount() != null ? request.amount() : 0;
+		int refundAmount = request.amount() != null ? request.amount() : 0;
+		if (refundAmount > 0) {
+			refundAmount = -refundAmount;
+		}
+		if (refundAmount > -10_000) {
+			throw new IllegalArgumentException("환급 최소 금액은 10,000원입니다.");
+		}
+		int currentTotalReward = user.getTotalAccumulatedReward() != null ? user.getTotalAccumulatedReward() : 0;
+		if (currentTotalReward + refundAmount < 0) {
+			throw new IllegalArgumentException("잔액이 부족합니다.");
+		}
+		user.addAccumulatedReward(refundAmount);
 		LocalDateTime transactionDate = request.transactionDate() != null ? request.transactionDate() : LocalDateTime.now();
 		RewardTransaction tx = RewardTransaction.builder()
 				.user(user)
 				.event(null)
-				.amount(amount)
-				.transactionType(request.transactionType())
+				.amount(refundAmount)
+				.transactionType(RewardTransactionType.REFUND)
 				.transactionDate(transactionDate)
-				.description(request.description())
+				.description(request.description() != null ? request.description() : "리워드 환급")
 				.bankName(request.bankName())
 				.accountNumberMasked(request.accountNumberMasked())
 				.build();
-		return rewardTransactionRepository.save(tx);
+		RewardTransaction saved = rewardTransactionRepository.save(tx);
+		achievementProgressService.syncRewardAmountAchievements(user);
+		return saved;
 	}
 
 	@Transactional

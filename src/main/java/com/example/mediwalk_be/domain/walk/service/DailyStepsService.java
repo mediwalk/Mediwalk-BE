@@ -5,6 +5,7 @@ import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.mission.service.AchievementProgressService;
 import com.example.mediwalk_be.domain.walk.repository.DailyStepsRepository;
 import com.example.mediwalk_be.domain.user.repository.UserRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,7 +28,7 @@ public class DailyStepsService {
 
 	public DailySteps getById(Long id) {
 		return dailyStepsRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("DailySteps not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("DailySteps not found: id=" + id));
 	}
 
 	public Optional<DailySteps> findByUserIdAndDate(Long userId, LocalDate date) {
@@ -44,7 +45,7 @@ public class DailyStepsService {
 		return dailyStepsRepository.findByUserIdAndDate(userId, date)
 				.orElseGet(() -> {
 					User user = userRepository.findById(userId)
-							.orElseThrow(() -> new IllegalArgumentException("User not found: id=" + userId));
+							.orElseThrow(() -> new NotFoundException("User not found: id=" + userId));
 					DailySteps ds = DailySteps.builder()
 							.user(user)
 							.date(date)

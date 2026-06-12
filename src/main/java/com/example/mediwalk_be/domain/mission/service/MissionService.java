@@ -3,6 +3,7 @@ package com.example.mediwalk_be.domain.mission.service;
 import com.example.mediwalk_be.domain.mission.entity.Mission;
 import com.example.mediwalk_be.domain.mission.entity.enums.MissionType;
 import com.example.mediwalk_be.domain.mission.repository.MissionRepository;
+import com.example.mediwalk_be.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,7 +24,7 @@ public class MissionService {
 
 	public Mission getById(Long id) {
 		return missionRepository.findById(id)
-				.orElseThrow(() -> new IllegalArgumentException("Mission not found: id=" + id));
+				.orElseThrow(() -> new NotFoundException("Mission not found: id=" + id));
 	}
 
 	public List<Mission> findAll() {

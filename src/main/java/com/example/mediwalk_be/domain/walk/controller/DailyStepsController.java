@@ -5,6 +5,7 @@ import com.example.mediwalk_be.domain.walk.dto.response.DailyStepsResponse;
 import com.example.mediwalk_be.domain.walk.service.DailyStepsService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -50,10 +51,10 @@ public class DailyStepsController {
 	}
 
 	@PostMapping("/{id}/add-steps")
-	@Operation(summary = "걸음 수 누적", description = "걸음 수를 누적합니다. 거리·칼로리는 자동 계산됩니다.")
+	@Operation(summary = "걸음 수 누적", description = "걸음 수를 누적합니다. 거리·칼로리는 자동 계산됩니다. count는 1~20000 사이여야 합니다.")
 	public ResponseEntity<DailyStepsResponse> addSteps(
 			@PathVariable Long id,
-			@RequestBody AddDailyStepsRequest request) {
+			@Valid @RequestBody AddDailyStepsRequest request) {
 		var updated = dailyStepsService.addSteps(id, request.count());
 		return ResponseEntity.ok(DailyStepsResponse.from(updated));
 	}

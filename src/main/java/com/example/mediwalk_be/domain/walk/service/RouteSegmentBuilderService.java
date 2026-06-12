@@ -82,7 +82,25 @@ public class RouteSegmentBuilderService {
 		ordered.sort(Comparator.comparingDouble(OrderedSegment::sortFraction)
 				.thenComparingInt(OrderedSegment::tieBreaker));
 
-		return ordered.stream().map(OrderedSegment::segment).toList();
+		return assignTimelineIndices(ordered.stream().map(OrderedSegment::segment).toList());
+	}
+
+	/** 경로상 위치로 정렬된 뒤, PARK·MARKET을 포함해 1부터 연속 segmentIndex를 부여한다. DESTINATION은 null 유지. */
+	private static List<RouteSegmentResponse> assignTimelineIndices(List<RouteSegmentResponse> segments) {
+		int index = 1;
+		List<RouteSegmentResponse> result = new ArrayList<>(segments.size());
+		for (RouteSegmentResponse segment : segments) {
+			if (segment.type() == RouteSegmentType.DESTINATION) {
+				result.add(segment);
+				continue;
+			}
+			result.add(new RouteSegmentResponse(
+					segment.type(),
+					index++,
+					segment.name(),
+					segment.instruction()));
+		}
+		return result;
 	}
 
 	private static RouteSegmentResponse destinationSegment(Route route) {

@@ -1,0 +1,32 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mediwalk-be:latest
+    container_name: mediwalk-be
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+
+    # TMAP_APP_KEY, GCP_*, DB_PASSWORD, CORS_ALLOWED_ORIGINS 등은 이 파일에서 관리
+    env_file:
+      - /home/ubuntu/mediwalk.env
+
+    environment:
+      # MySQL은 EC2 호스트에 설치되어 있음. application.yaml 기본값(localhost)은
+      # 컨테이너 안에서는 컨테이너 자신을 가리키므로 host.docker.internal로 덮어쓴다.
+      # EC2(Linux)에서 host.docker.internal을 쓰려면 아래 extra_hosts가 필요하다.
+      # host.docker.internal 대신 EC2 프라이빗 IP를 직접 써도 된다.
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:-jdbc:mysql://host.docker.internal:3306/mediwalk?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Seoul}
+
+      # mediwalk.env의 GCP_CREDENTIALS_PATH / FIREBASE_CREDENTIALS_PATH가 호스트 경로(/home/ubuntu/secrets/...)로
+      # 적혀 있어도, 컨테이너 내부에서는 아래 마운트 경로를 봐야 하므로 여기서 강제 지정한다.
+      GCP_CREDENTIALS_PATH: /app/secrets/gcp-key.json
+      FIREBASE_CREDENTIALS_PATH: /app/secrets/gcp-key.json
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    volumes:
+      - /home/ubuntu/secrets/gcp-key.json:/app/secrets/gcp-key.json:ro

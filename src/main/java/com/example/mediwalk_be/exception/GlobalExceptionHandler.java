@@ -17,11 +17,26 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
 	private static final String CODE_NOT_FOUND = "NOT_FOUND";
+	private static final String CODE_CONFLICT = "CONFLICT";
 	private static final String CODE_BAD_REQUEST = "BAD_REQUEST";
 	private static final String CODE_VALIDATION_ERROR = "VALIDATION_ERROR";
 	private static final String CODE_INTERNAL_ERROR = "INTERNAL_ERROR";
 	private static final String CODE_SERVICE_UNAVAILABLE = "SERVICE_UNAVAILABLE";
 	private static final String CODE_HTTP_ERROR = "HTTP_ERROR";
+
+	@ExceptionHandler(NotFoundException.class)
+	public ResponseEntity<ErrorResponse> handleNotFound(NotFoundException ex) {
+		return ResponseEntity
+				.status(HttpStatus.NOT_FOUND)
+				.body(ErrorResponse.of(CODE_NOT_FOUND, ex.getMessage(), HttpStatus.NOT_FOUND.value()));
+	}
+
+	@ExceptionHandler(ConflictException.class)
+	public ResponseEntity<ErrorResponse> handleConflict(ConflictException ex) {
+		return ResponseEntity
+				.status(HttpStatus.CONFLICT)
+				.body(ErrorResponse.of(CODE_CONFLICT, ex.getMessage(), HttpStatus.CONFLICT.value()));
+	}
 
 	@ExceptionHandler(ResponseStatusException.class)
 	public ResponseEntity<ErrorResponse> handleResponseStatus(ResponseStatusException ex) {
@@ -56,11 +71,6 @@ public class GlobalExceptionHandler {
 
 	@ExceptionHandler(IllegalArgumentException.class)
 	public ResponseEntity<ErrorResponse> handleIllegalArgument(IllegalArgumentException ex) {
-		if (ex.getMessage() != null && ex.getMessage().toLowerCase().contains("not found")) {
-			return ResponseEntity
-					.status(HttpStatus.NOT_FOUND)
-					.body(ErrorResponse.of(CODE_NOT_FOUND, ex.getMessage(), HttpStatus.NOT_FOUND.value()));
-		}
 		return ResponseEntity
 				.status(HttpStatus.BAD_REQUEST)
 				.body(ErrorResponse.of(CODE_BAD_REQUEST, ex.getMessage(), HttpStatus.BAD_REQUEST.value()));

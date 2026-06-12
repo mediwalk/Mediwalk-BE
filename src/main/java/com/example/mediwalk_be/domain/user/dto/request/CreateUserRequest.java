@@ -1,19 +1,18 @@
 package com.example.mediwalk_be.domain.user.dto.request;
 
 import com.example.mediwalk_be.domain.user.entity.enums.Gender;
-import com.example.mediwalk_be.domain.user.entity.enums.UserRole;
-import com.example.mediwalk_be.domain.user.entity.enums.UserStatus;
+
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
 
 import java.time.LocalDate;
 
 public record CreateUserRequest(
-	String email,
-	String password,
-	String name,
+	@NotBlank @Email String email,
+	@NotBlank String password,
+	@NotBlank String name,
 	String phone,
 	LocalDate birthDate,
-	Gender gender,
-	UserRole role,
-	UserStatus status
+	Gender gender
 ) {
 }
