@@ -1,9 +1,11 @@
 package com.example.mediwalk_be.domain.reward.controller;
 
 import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.reward.dto.request.CreateRewardTransactionRequest;
 import com.example.mediwalk_be.domain.reward.dto.response.RewardTransactionCountResponse;
 import com.example.mediwalk_be.domain.reward.dto.response.RewardTransactionResponse;
+import com.example.mediwalk_be.domain.reward.entity.RewardTransaction;
 import com.example.mediwalk_be.domain.reward.service.RewardTransactionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -37,9 +39,14 @@ public class RewardTransactionController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "리워드 거래 단건 조회", description = "거래 ID로 리워드 거래 상세 정보를 조회합니다. 연결된 이벤트가 있으면 제목·장소·유형 및 적립 완료 여부가 포함됩니다.")
-	public ResponseEntity<RewardTransactionResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<RewardTransactionResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return rewardTransactionService.findByIdWithEvent(id)
-				.map(RewardTransactionResponse::from)
+				.map(tx -> {
+					OwnershipGuard.requireOwner(currentUser, tx.getUser().getId());
+					return RewardTransactionResponse.from(tx);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -86,10 +93,14 @@ public class RewardTransactionController {
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "리워드 거래 삭제", description = "거래 ID 기준으로 리워드 거래를 삭제합니다.")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (rewardTransactionService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		RewardTransaction tx = rewardTransactionService.findById(id).orElse(null);
+		if (tx == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, tx.getUser().getId());
 		rewardTransactionService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

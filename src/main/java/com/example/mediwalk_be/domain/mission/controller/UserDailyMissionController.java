@@ -1,8 +1,10 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
 import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.mission.dto.request.CreateUserDailyMissionRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserDailyMissionResponse;
+import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.walk.dto.response.DestinationProximityResponse;
 import com.example.mediwalk_be.domain.mission.service.UserDailyMissionService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -28,11 +30,15 @@ public class UserDailyMissionController {
 	@GetMapping("/{id}")
 	@Operation(summary = "일일 미션 단건 조회", description = "미션 상세(제목·목적지·상태). currentLatitude/Longitude 전달 시 목적지까지 거리·도보시간을 계산합니다.")
 	public ResponseEntity<UserDailyMissionResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@PathVariable Long id,
 			@RequestParam(required = false) Double currentLatitude,
 			@RequestParam(required = false) Double currentLongitude) {
 		return userDailyMissionService.findById(id)
-				.map(mission -> UserDailyMissionResponse.from(mission, currentLatitude, currentLongitude))
+				.map(mission -> {
+					OwnershipGuard.requireOwner(currentUser, mission.getUser().getId());
+					return UserDailyMissionResponse.from(mission, currentLatitude, currentLongitude);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -76,21 +82,28 @@ public class UserDailyMissionController {
 					+ "이미지 인식 페이지 진입 전에 호출하세요. withinActivationRadius가 true일 때만 인증을 진행하면 됩니다."
 	)
 	public ResponseEntity<DestinationProximityResponse> checkDestinationProximity(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@PathVariable Long id,
 			@RequestParam double currentLatitude,
 			@RequestParam double currentLongitude) {
-		if (userDailyMissionService.findById(id).isEmpty()) {
+		UserDailyMission mission = userDailyMissionService.findById(id).orElse(null);
+		if (mission == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, mission.getUser().getId());
 		return ResponseEntity.ok(userDailyMissionService.checkDestinationProximity(id, currentLatitude, currentLongitude));
 	}
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "일일 미션 삭제", description = "일일 미션 ID 기준으로 데이터를 삭제합니다. (관리·테스트용)")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (userDailyMissionService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		UserDailyMission mission = userDailyMissionService.findById(id).orElse(null);
+		if (mission == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, mission.getUser().getId());
 		userDailyMissionService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

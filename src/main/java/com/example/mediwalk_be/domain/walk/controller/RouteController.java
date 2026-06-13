@@ -8,6 +8,7 @@ import com.example.mediwalk_be.domain.walk.dto.response.GeneratedRouteResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.RouteResponse;
 import com.example.mediwalk_be.domain.walk.entity.Route;
 import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.walk.service.RouteAlongPoiSuggestionService;
 import com.example.mediwalk_be.domain.walk.service.RouteSegmentBuilderService;
 import com.example.mediwalk_be.domain.walk.service.RouteService;
@@ -53,9 +54,14 @@ public class RouteController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "경로 단건 조회")
-	public ResponseEntity<RouteResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<RouteResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return routeService.findById(id)
-				.map(route -> toRouteResponseWithAlongPois(route, List.of()))
+				.map(route -> {
+					OwnershipGuard.requireOwner(currentUser, route.getUser().getId());
+					return toRouteResponseWithAlongPois(route, List.of());
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -73,10 +79,14 @@ public class RouteController {
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "경로 삭제")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (routeService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		Route route = routeService.findById(id).orElse(null);
+		if (route == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, route.getUser().getId());
 		routeService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

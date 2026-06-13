@@ -1,9 +1,12 @@
 package com.example.mediwalk_be.domain.mission.controller;
 
 import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.mission.dto.request.AddUserAchievementProgressRequest;
 import com.example.mediwalk_be.domain.mission.dto.response.UserAchievementResponse;
+import com.example.mediwalk_be.domain.mission.entity.UserAchievement;
 import com.example.mediwalk_be.domain.mission.service.UserAchievementService;
+import com.example.mediwalk_be.exception.NotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -24,9 +27,14 @@ public class UserAchievementController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "사용자 업적 단건 조회")
-	public ResponseEntity<UserAchievementResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<UserAchievementResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return userAchievementService.findById(id)
-				.map(UserAchievementResponse::from)
+				.map(ua -> {
+					OwnershipGuard.requireOwner(currentUser, ua.getUser().getId());
+					return UserAchievementResponse.from(ua);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -51,18 +59,26 @@ public class UserAchievementController {
 	@PostMapping("/{id}/add-progress")
 	@Operation(summary = "업적 진행도 추가", description = "진행도를 delta만큼 증가시킵니다. (테스트용 — 실서비스는 이벤트·걸음 수로 자동 sync)")
 	public ResponseEntity<UserAchievementResponse> addProgress(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@PathVariable Long id,
 			@RequestBody AddUserAchievementProgressRequest request) {
+		UserAchievement existing = userAchievementService.findById(id)
+				.orElseThrow(() -> new NotFoundException("UserAchievement not found: id=" + id));
+		OwnershipGuard.requireOwner(currentUser, existing.getUser().getId());
 		var updated = userAchievementService.addProgress(id, request.delta());
 		return ResponseEntity.ok(UserAchievementResponse.from(updated));
 	}
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "사용자 업적 삭제", description = "사용자 업적 ID 기준으로 진행 레코드를 삭제합니다. (관리·테스트용)")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (userAchievementService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		UserAchievement ua = userAchievementService.findById(id).orElse(null);
+		if (ua == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, ua.getUser().getId());
 		userAchievementService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

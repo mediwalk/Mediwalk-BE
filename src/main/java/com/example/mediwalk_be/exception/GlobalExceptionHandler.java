@@ -17,6 +17,7 @@ import java.util.List;
 public class GlobalExceptionHandler {
 
 	private static final String CODE_NOT_FOUND = "NOT_FOUND";
+	private static final String CODE_FORBIDDEN = "FORBIDDEN";
 	private static final String CODE_CONFLICT = "CONFLICT";
 	private static final String CODE_BAD_REQUEST = "BAD_REQUEST";
 	private static final String CODE_VALIDATION_ERROR = "VALIDATION_ERROR";
@@ -29,6 +30,13 @@ public class GlobalExceptionHandler {
 		return ResponseEntity
 				.status(HttpStatus.NOT_FOUND)
 				.body(ErrorResponse.of(CODE_NOT_FOUND, ex.getMessage(), HttpStatus.NOT_FOUND.value()));
+	}
+
+	@ExceptionHandler(ForbiddenException.class)
+	public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenException ex) {
+		return ResponseEntity
+				.status(HttpStatus.FORBIDDEN)
+				.body(ErrorResponse.of(CODE_FORBIDDEN, ex.getMessage(), HttpStatus.FORBIDDEN.value()));
 	}
 
 	@ExceptionHandler(ConflictException.class)

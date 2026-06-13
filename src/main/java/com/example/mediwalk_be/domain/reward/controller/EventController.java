@@ -1,9 +1,11 @@
 package com.example.mediwalk_be.domain.reward.controller;
 
 import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.reward.dto.request.CreateEventRequest;
 import com.example.mediwalk_be.domain.reward.dto.response.EventCreateResponse;
 import com.example.mediwalk_be.domain.reward.dto.response.EventResponse;
+import com.example.mediwalk_be.domain.reward.entity.Event;
 import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.reward.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -44,9 +46,14 @@ public class EventController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "이벤트 단건 조회", description = "이벤트 ID로 상세 정보를 조회합니다.")
-	public ResponseEntity<EventResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<EventResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return eventService.findById(id)
-				.map(EventResponse::from)
+				.map(event -> {
+					OwnershipGuard.requireOwner(currentUser, event.getUser().getId());
+					return EventResponse.from(event);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -65,10 +72,14 @@ public class EventController {
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "이벤트 삭제", description = "이벤트 ID 기준으로 데이터를 삭제합니다.")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (eventService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		Event event = eventService.findById(id).orElse(null);
+		if (event == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, event.getUser().getId());
 		eventService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

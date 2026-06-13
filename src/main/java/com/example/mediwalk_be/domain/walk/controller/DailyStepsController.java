@@ -1,9 +1,12 @@
 package com.example.mediwalk_be.domain.walk.controller;
 
 import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.walk.dto.request.AddDailyStepsRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.DailyStepsResponse;
+import com.example.mediwalk_be.domain.walk.entity.DailySteps;
 import com.example.mediwalk_be.domain.walk.service.DailyStepsService;
+import com.example.mediwalk_be.exception.NotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -26,9 +29,14 @@ public class DailyStepsController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "걸음 수 단건 조회")
-	public ResponseEntity<DailyStepsResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<DailyStepsResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return dailyStepsService.findById(id)
-				.map(DailyStepsResponse::from)
+				.map(ds -> {
+					OwnershipGuard.requireOwner(currentUser, ds.getUser().getId());
+					return DailyStepsResponse.from(ds);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
@@ -55,18 +63,26 @@ public class DailyStepsController {
 	@PostMapping("/{id}/add-steps")
 	@Operation(summary = "걸음 수 누적", description = "걸음 수를 누적합니다. 거리·칼로리는 자동 계산됩니다. count는 1~20000 사이여야 합니다.")
 	public ResponseEntity<DailyStepsResponse> addSteps(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@PathVariable Long id,
 			@Valid @RequestBody AddDailyStepsRequest request) {
+		DailySteps existing = dailyStepsService.findById(id)
+				.orElseThrow(() -> new NotFoundException("DailySteps not found: id=" + id));
+		OwnershipGuard.requireOwner(currentUser, existing.getUser().getId());
 		var updated = dailyStepsService.addSteps(id, request.count());
 		return ResponseEntity.ok(DailyStepsResponse.from(updated));
 	}
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "걸음 수 레코드 삭제")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (dailyStepsService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		DailySteps ds = dailyStepsService.findById(id).orElse(null);
+		if (ds == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, ds.getUser().getId());
 		dailyStepsService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}
