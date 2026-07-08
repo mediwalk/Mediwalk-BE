@@ -204,9 +204,9 @@ public class RewardTransactionService {
 
 	/** 환급 신청. 최소 10,000원, 사용자 잔액 검증. 적립(ACCUMULATION)은 이벤트 생성 시 EventService에서만 처리하므로 이 메서드는 REFUND만 허용한다. */
 	@Transactional
-	public RewardTransaction create(CreateRewardTransactionRequest request) {
-		User user = userRepository.findById(request.userId())
-				.orElseThrow(() -> new NotFoundException("User not found: id=" + request.userId()));
+	public RewardTransaction create(Long userId, CreateRewardTransactionRequest request) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + userId));
 
 		if (request.transactionType() != RewardTransactionType.REFUND) {
 			throw new IllegalArgumentException("리워드 거래 생성은 환급(REFUND)만 지원합니다. 적립 내역은 이벤트 생성을 통해 자동으로 처리됩니다.");

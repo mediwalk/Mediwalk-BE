@@ -11,8 +11,11 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.mission.service.UserAchievementProvisioningService;
 import com.example.mediwalk_be.domain.user.dto.request.CreateUserRequest;
 import com.example.mediwalk_be.domain.user.dto.response.UserResponse;
@@ -44,7 +47,10 @@ public class UserController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "사용자 단건 조회", description = "홈 화면용: 누적 리워드·수거 횟수와 이번 달 폐의약품 수거 리워드·증가율을 포함합니다.")
-	public ResponseEntity<UserResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<UserResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		OwnershipGuard.requireOwnerOrAdmin(currentUser, id);
 		return userService.findById(id)
 				.map(user -> {
 				var summary = userService.getRewardMainMonthlySummary(id);

@@ -1,14 +1,19 @@
 package com.example.mediwalk_be.domain.walk.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.walk.dto.request.AddDailyStepsRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.DailyStepsResponse;
+import com.example.mediwalk_be.domain.walk.entity.DailySteps;
 import com.example.mediwalk_be.domain.walk.service.DailyStepsService;
+import com.example.mediwalk_be.exception.NotFoundException;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
@@ -24,19 +29,24 @@ public class DailyStepsController {
 
 	@GetMapping("/{id}")
 	@Operation(summary = "걸음 수 단건 조회")
-	public ResponseEntity<DailyStepsResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<DailyStepsResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return dailyStepsService.findById(id)
-				.map(DailyStepsResponse::from)
+				.map(ds -> {
+					OwnershipGuard.requireOwner(currentUser, ds.getUser().getId());
+					return DailyStepsResponse.from(ds);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@GetMapping(params = {"userId", "date"})
-	@Operation(summary = "날짜별 걸음 수 조회", description = "userId와 date(yyyy-MM-dd)로 해당 날짜의 걸음 수를 조회합니다.")
+	@GetMapping(params = "date")
+	@Operation(summary = "날짜별 걸음 수 조회", description = "date(yyyy-MM-dd)로 현재 사용자의 해당 날짜 걸음 수를 조회합니다.")
 	public ResponseEntity<DailyStepsResponse> findByUserIdAndDate(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam LocalDate date) {
-		Optional<DailyStepsResponse> result = dailyStepsService.findByUserIdAndDate(userId, date)
+		Optional<DailyStepsResponse> result = dailyStepsService.findByUserIdAndDate(currentUser.userId(), date)
 				.map(DailyStepsResponse::from);
 		return result.map(ResponseEntity::ok).orElse(ResponseEntity.notFound().build());
 	}
@@ -44,27 +54,35 @@ public class DailyStepsController {
 	@PostMapping("/get-or-create")
 	@Operation(summary = "걸음 수 조회 또는 생성", description = "해당 날짜 걸음 수 레코드가 없으면 0으로 생성 후 반환합니다.")
 	public ResponseEntity<DailyStepsResponse> getOrCreate(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam LocalDate date) {
-		var ds = dailyStepsService.getOrCreate(userId, date);
+		var ds = dailyStepsService.getOrCreate(currentUser.userId(), date);
 		return ResponseEntity.status(HttpStatus.CREATED).body(DailyStepsResponse.from(ds));
 	}
 
 	@PostMapping("/{id}/add-steps")
 	@Operation(summary = "걸음 수 누적", description = "걸음 수를 누적합니다. 거리·칼로리는 자동 계산됩니다. count는 1~20000 사이여야 합니다.")
 	public ResponseEntity<DailyStepsResponse> addSteps(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@PathVariable Long id,
 			@Valid @RequestBody AddDailyStepsRequest request) {
+		DailySteps existing = dailyStepsService.findById(id)
+				.orElseThrow(() -> new NotFoundException("DailySteps not found: id=" + id));
+		OwnershipGuard.requireOwner(currentUser, existing.getUser().getId());
 		var updated = dailyStepsService.addSteps(id, request.count());
 		return ResponseEntity.ok(DailyStepsResponse.from(updated));
 	}
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "걸음 수 레코드 삭제")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (dailyStepsService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		DailySteps ds = dailyStepsService.findById(id).orElse(null);
+		if (ds == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, ds.getUser().getId());
 		dailyStepsService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

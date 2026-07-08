@@ -1,8 +1,11 @@
 package com.example.mediwalk_be.domain.reward.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.reward.dto.request.CreateEventRequest;
 import com.example.mediwalk_be.domain.reward.dto.response.EventCreateResponse;
 import com.example.mediwalk_be.domain.reward.dto.response.EventResponse;
+import com.example.mediwalk_be.domain.reward.entity.Event;
 import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import com.example.mediwalk_be.domain.reward.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -11,6 +14,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -33,38 +37,49 @@ public class EventController {
 					처리된 미션(userDailyMissionId, userDailyMissionStatus)이 포함됩니다.
 					"""
 	)
-	public ResponseEntity<EventCreateResponse> create(@RequestBody CreateEventRequest request) {
+	public ResponseEntity<EventCreateResponse> create(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@RequestBody CreateEventRequest request) {
 		return ResponseEntity.status(HttpStatus.CREATED)
-				.body(eventService.create(request));
+				.body(eventService.create(currentUser.userId(), request));
 	}
 
 	@GetMapping("/{id}")
 	@Operation(summary = "이벤트 단건 조회", description = "이벤트 ID로 상세 정보를 조회합니다.")
-	public ResponseEntity<EventResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<EventResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return eventService.findById(id)
-				.map(EventResponse::from)
+				.map(event -> {
+					OwnershipGuard.requireOwner(currentUser, event.getUser().getId());
+					return EventResponse.from(event);
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@GetMapping(params = "userId")
-	@Operation(summary = "이벤트 목록 조회", description = "사용자 이벤트 목록을 최신순으로 조회합니다. eventType 전달 시 해당 타입만 필터링됩니다.")
+	@GetMapping
+	@Operation(summary = "이벤트 목록 조회", description = "현재 사용자의 이벤트 목록을 최신순으로 조회합니다. eventType 전달 시 해당 타입만 필터링됩니다.")
 	public List<EventResponse> findByUserId(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam(required = false) EventType eventType,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return eventService.findByUserIdWithOptionalEventType(userId, eventType, PageRequest.of(page, size)).stream()
+		return eventService.findByUserIdWithOptionalEventType(currentUser.userId(), eventType, PageRequest.of(page, size)).stream()
 				.map(EventResponse::from)
 				.toList();
 	}
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "이벤트 삭제", description = "이벤트 ID 기준으로 데이터를 삭제합니다.")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (eventService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		Event event = eventService.findById(id).orElse(null);
+		if (event == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, event.getUser().getId());
 		eventService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

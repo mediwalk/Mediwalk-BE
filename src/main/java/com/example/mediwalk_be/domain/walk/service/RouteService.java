@@ -100,7 +100,7 @@ public class RouteService {
 	}
 
 	@Transactional
-	public GeneratedRouteResponse generateRoute(RouteGenerationRequest request) {
+	public GeneratedRouteResponse generateRoute(Long userId, RouteGenerationRequest request) {
 		if (request.destinationIds() == null || request.destinationIds().isEmpty()) {
 			throw new IllegalArgumentException("후보 목적지(destinationIds)가 비어 있습니다.");
 		}
@@ -133,7 +133,7 @@ public class RouteService {
 		}
 
 		CreateRouteRequest createRequest = new CreateRouteRequest(
-				request.userId(),
+				userId,
 				null,
 				destination.getId(),
 				request.currentLatitude(),

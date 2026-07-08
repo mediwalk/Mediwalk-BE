@@ -7,6 +7,8 @@ import com.example.mediwalk_be.domain.walk.dto.response.AlongRoutePoiResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.GeneratedRouteResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.RouteResponse;
 import com.example.mediwalk_be.domain.walk.entity.Route;
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
+import com.example.mediwalk_be.config.security.OwnershipGuard;
 import com.example.mediwalk_be.domain.walk.service.RouteAlongPoiSuggestionService;
 import com.example.mediwalk_be.domain.walk.service.RouteSegmentBuilderService;
 import com.example.mediwalk_be.domain.walk.service.RouteService;
@@ -17,6 +19,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -41,38 +44,49 @@ public class RouteController {
 	@PostMapping("/generate")
 	@Operation(summary = "맞춤 경로 생성",
 			description = "destinationIds 후보 중 filter.activityLevel에 맞는 수거함을 고른 뒤 Tmap 보행 경로를 산출합니다.")
-	public ResponseEntity<RouteResponse> generateRoute(@Valid @RequestBody RouteGenerationRequest request) {
-		GeneratedRouteResponse generated = routeService.generateRoute(request);
+	public ResponseEntity<RouteResponse> generateRoute(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@Valid @RequestBody RouteGenerationRequest request) {
+		GeneratedRouteResponse generated = routeService.generateRoute(currentUser.userId(), request);
 		return ResponseEntity.status(HttpStatus.CREATED)
 				.body(toRouteResponseWithAlongPois(generated.route(), generated.guideSteps()));
 	}
 
 	@GetMapping("/{id}")
 	@Operation(summary = "경로 단건 조회")
-	public ResponseEntity<RouteResponse> findById(@PathVariable Long id) {
+	public ResponseEntity<RouteResponse> findById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
 		return routeService.findById(id)
-				.map(route -> toRouteResponseWithAlongPois(route, List.of()))
+				.map(route -> {
+					OwnershipGuard.requireOwner(currentUser, route.getUser().getId());
+					return toRouteResponseWithAlongPois(route, List.of());
+				})
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
 
-	@GetMapping(params = "userId")
+	@GetMapping
 	@Operation(summary = "사용자 경로 목록 조회", description = "생성일 내림차순으로 페이징 반환합니다.")
 	public List<RouteResponse> findByUserId(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@RequestParam(defaultValue = "0") int page,
 			@RequestParam(defaultValue = "20") int size) {
-		return routeService.findByUserIdOrderByGeneratedAtDesc(userId, PageRequest.of(page, size)).stream()
+		return routeService.findByUserIdOrderByGeneratedAtDesc(currentUser.userId(), PageRequest.of(page, size)).stream()
 				.map(RouteResponse::from)
 				.toList();
 	}
 
 	@DeleteMapping("/{id}")
 	@Operation(summary = "경로 삭제")
-	public ResponseEntity<Void> deleteById(@PathVariable Long id) {
-		if (routeService.findById(id).isEmpty()) {
+	public ResponseEntity<Void> deleteById(
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
+			@PathVariable Long id) {
+		Route route = routeService.findById(id).orElse(null);
+		if (route == null) {
 			return ResponseEntity.notFound().build();
 		}
+		OwnershipGuard.requireOwner(currentUser, route.getUser().getId());
 		routeService.deleteById(id);
 		return ResponseEntity.noContent().build();
 	}

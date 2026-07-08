@@ -5,7 +5,6 @@ import com.example.mediwalk_be.domain.reward.entity.enums.EventType;
 import java.time.LocalDateTime;
 
 public record CreateEventRequest(
-	Long userId,
 	EventType eventType,
 	String title,
 	Integer rewardAmount,

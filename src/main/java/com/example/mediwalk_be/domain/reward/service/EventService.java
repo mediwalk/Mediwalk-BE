@@ -86,9 +86,9 @@ public class EventService {
 
 
 	@Transactional
-	public EventCreateResponse create(CreateEventRequest request) {
-		User user = userRepository.findById(request.userId())
-				.orElseThrow(() -> new NotFoundException("User not found: id=" + request.userId()));
+	public EventCreateResponse create(Long userId, CreateEventRequest request) {
+		User user = userRepository.findById(userId)
+				.orElseThrow(() -> new NotFoundException("User not found: id=" + userId));
 		CollectionLocation collectionLocation = request.collectionLocationId() != null
 				? collectionLocationRepository.findById(request.collectionLocationId()).orElse(null)
 				: null;
@@ -163,7 +163,7 @@ public class EventService {
 		Long completedMissionId = null;
 		MissionStatus completedMissionStatus = null;
 		if (request.userDailyMissionId() != null) {
-			UserDailyMission completedMission = completeLinkedDailyMission(request, rewardAmount);
+			UserDailyMission completedMission = completeLinkedDailyMission(userId, request, rewardAmount);
 			completedMissionId = completedMission.getId();
 			completedMissionStatus = completedMission.getStatus();
 		}
@@ -182,9 +182,9 @@ public class EventService {
 		);
 	}
 
-	private UserDailyMission completeLinkedDailyMission(CreateEventRequest request, int rewardAmount) {
+	private UserDailyMission completeLinkedDailyMission(Long userId, CreateEventRequest request, int rewardAmount) {
 		UserDailyMission mission = userDailyMissionService.getById(request.userDailyMissionId());
-		if (!mission.getUser().getId().equals(request.userId())) {
+		if (!mission.getUser().getId().equals(userId)) {
 			throw new IllegalArgumentException("userDailyMissionId가 userId와 일치하지 않습니다.");
 		}
 		if (mission.getStatus() == MissionStatus.COMPLETED) {

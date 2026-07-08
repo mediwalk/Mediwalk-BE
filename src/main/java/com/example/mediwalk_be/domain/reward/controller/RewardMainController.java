@@ -1,5 +1,6 @@
 package com.example.mediwalk_be.domain.reward.controller;
 
+import com.example.mediwalk_be.config.security.AuthenticatedUser;
 import com.example.mediwalk_be.domain.reward.dto.response.RewardMainResponse;
 import com.example.mediwalk_be.domain.reward.service.RewardMainService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -7,6 +8,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -23,11 +25,11 @@ public class RewardMainController {
 	@GetMapping
 	@Operation(summary = "리워드 메인 요약", description = "총 적립 리워드, 이번·지난 달 적립(해당 월 거래일 기준 ACCUMULATION 합계·모든 적립 유형 포함), 증가율, 통산 수거 횟수(totalCollectionsCount), 올해 폐의약품 수거 횟수, 달성 목표(코드·설명·카테고리 포함), 최근 적립·환급 내역을 반환합니다.")
 	public ResponseEntity<RewardMainResponse> getRewardMain(
-			@RequestParam Long userId,
+			@AuthenticationPrincipal AuthenticatedUser currentUser,
 			@Parameter(description = "달성 목표 최대 개수. 0 이하이면 전체. 양수면 상위 N개만(정렬 후).")
 			@RequestParam(defaultValue = "0") int achievementsLimit,
 			@RequestParam(defaultValue = "10") int recentTransactionsSize) {
-		return rewardMainService.getRewardMain(userId, achievementsLimit, recentTransactionsSize)
+		return rewardMainService.getRewardMain(currentUser.userId(), achievementsLimit, recentTransactionsSize)
 				.map(ResponseEntity::ok)
 				.orElse(ResponseEntity.notFound().build());
 	}
