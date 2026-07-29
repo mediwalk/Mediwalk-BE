@@ -16,6 +16,7 @@ app:
     # 폴리라인(선분)까지 최단거리 순으로 자를 때 카테고리당 최대 개수 (기본 1 = 마트·공원 각 1곳)
     poi-max-suggestions-per-category: 1
     poi-max-distance-to-polyline-meters: 200 # routeSegments 마트·공원 포함: 폴리라인까지 이 거리 이내만
+    poi-parallelism: 8              # 샘플 지점별 Tmap POI 호출을 동시에 보낼 스레드 수
 
   ai:
     medicine-verification:

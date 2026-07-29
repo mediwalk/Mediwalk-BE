@@ -7,6 +7,7 @@ import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
 import com.example.mediwalk_be.domain.walk.util.GeoPathSampling;
 import com.example.mediwalk_be.domain.walk.util.PolylineDecoder;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -16,6 +17,8 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 @Slf4j
 @Service
@@ -26,6 +29,7 @@ public class RouteAlongPoiSuggestionService {
 					"미니스톱", "바이더웨이" };
 
 	private final TmapAroundPoiClient tmapAroundPoiClient;
+	private final ExecutorService tmapPoiExecutor;
 	private final double sampleIntervalMeters;
 	private final int sampleMaxPoints;
 	private final String searchRadiusKm;
@@ -36,6 +40,7 @@ public class RouteAlongPoiSuggestionService {
 
 	public RouteAlongPoiSuggestionService(
 			TmapAroundPoiClient tmapAroundPoiClient,
+			@Qualifier("tmapPoiExecutor") ExecutorService tmapPoiExecutor,
 			@Value("${app.tmap.poi-sample-interval-meters:260}") double sampleIntervalMeters,
 			@Value("${app.tmap.poi-sample-max-points:14}") int sampleMaxPoints,
 			@Value("${app.tmap.poi-search-radius-km:1}") String searchRadiusKm,
@@ -44,6 +49,7 @@ public class RouteAlongPoiSuggestionService {
 			@Value("${app.tmap.poi-search-count-per-call:18}") int poiCountPerCall,
 			@Value("${app.tmap.poi-max-suggestions-per-category:1}") int maxSuggestionsPerCategory) {
 		this.tmapAroundPoiClient = tmapAroundPoiClient;
+		this.tmapPoiExecutor = tmapPoiExecutor;
 		this.sampleIntervalMeters = sampleIntervalMeters;
 		this.sampleMaxPoints = sampleMaxPoints;
 		this.searchRadiusKm = searchRadiusKm;
@@ -84,15 +90,14 @@ public class RouteAlongPoiSuggestionService {
 
 		Map<String, TmapPoiBrief> uniq = new LinkedHashMap<>();
 
-		for (double[] xy : samples) {
-			List<TmapPoiBrief> hits = tmapAroundPoiClient.searchAround(
-					xy[0],
-					xy[1],
-					searchRadiusKm,
-					categories,
-					poiCountPerCall);
+		List<CompletableFuture<List<TmapPoiBrief>>> futures = samples.stream()
+				.map(xy -> CompletableFuture.supplyAsync(
+						() -> tmapAroundPoiClient.searchAround(xy[0], xy[1], searchRadiusKm, categories, poiCountPerCall),
+						tmapPoiExecutor))
+				.toList();
 
-			for (TmapPoiBrief p : hits) {
+		for (CompletableFuture<List<TmapPoiBrief>> future : futures) {
+			for (TmapPoiBrief p : future.join()) {
 				if (category == AlongRoutePoiResponse.AlongRouteSuggestionCategory.MARKET && isLikelyConvenienceStore(p.name())) {
 					continue;
 				}
