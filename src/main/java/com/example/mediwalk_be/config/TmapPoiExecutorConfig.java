@@ -14,4 +14,9 @@ public class TmapPoiExecutorConfig {
 	public ExecutorService tmapPoiExecutor(@Value("${app.tmap.poi-parallelism:8}") int parallelism) {
 		return Executors.newFixedThreadPool(Math.max(1, parallelism));
 	}
+
+	@Bean(name = "routeSuggestionOuterExecutor", destroyMethod = "shutdown")
+	public ExecutorService routeSuggestionOuterExecutor() {
+		return Executors.newFixedThreadPool(2);
+	}
 }

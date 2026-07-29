@@ -15,7 +15,7 @@ import com.example.mediwalk_be.domain.walk.service.RouteService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -23,16 +23,29 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
 
 @RestController
 @RequestMapping("/api/routes")
-@RequiredArgsConstructor
 @Tag(name = "Route", description = "운동 경로: 맞춤 경로 생성 및 조회")
 public class RouteController {
 
 	private final RouteService routeService;
 	private final RouteAlongPoiSuggestionService routeAlongPoiSuggestionService;
 	private final RouteSegmentBuilderService routeSegmentBuilderService;
+	private final ExecutorService routeSuggestionOuterExecutor;
+
+	public RouteController(
+			RouteService routeService,
+			RouteAlongPoiSuggestionService routeAlongPoiSuggestionService,
+			RouteSegmentBuilderService routeSegmentBuilderService,
+			@Qualifier("routeSuggestionOuterExecutor") ExecutorService routeSuggestionOuterExecutor) {
+		this.routeService = routeService;
+		this.routeAlongPoiSuggestionService = routeAlongPoiSuggestionService;
+		this.routeSegmentBuilderService = routeSegmentBuilderService;
+		this.routeSuggestionOuterExecutor = routeSuggestionOuterExecutor;
+	}
 
 	@PostMapping
 	@Operation(summary = "경로 직접 생성", description = "Tmap 없이 경로 데이터를 직접 저장합니다. (관리·테스트용 — 앱은 POST /routes/generate 사용)")
@@ -93,15 +106,18 @@ public class RouteController {
 
 	private RouteResponse toRouteResponseWithAlongPois(Route route, List<TmapRouteGuideStep> guideSteps) {
 		String poly = route.getRoutePolyline();
+		boolean wantMarts = Boolean.TRUE.equals(route.getNotifyEcoMart()) && poly != null && !poly.isBlank();
+		boolean wantParks = Boolean.TRUE.equals(route.getHasRestPoints()) && poly != null && !poly.isBlank();
 
-		List<AlongRoutePoiResponse> marts =
-				Boolean.TRUE.equals(route.getNotifyEcoMart()) && poly != null && !poly.isBlank()
-						? routeAlongPoiSuggestionService.collectMartSuggestions(poly)
-						: List.of();
-		List<AlongRoutePoiResponse> parks =
-				Boolean.TRUE.equals(route.getHasRestPoints()) && poly != null && !poly.isBlank()
-						? routeAlongPoiSuggestionService.collectParkSuggestions(poly)
-						: List.of();
+		CompletableFuture<List<AlongRoutePoiResponse>> martsFuture = wantMarts
+				? CompletableFuture.supplyAsync(() -> routeAlongPoiSuggestionService.collectMartSuggestions(poly), routeSuggestionOuterExecutor)
+				: CompletableFuture.completedFuture(List.of());
+		CompletableFuture<List<AlongRoutePoiResponse>> parksFuture = wantParks
+				? CompletableFuture.supplyAsync(() -> routeAlongPoiSuggestionService.collectParkSuggestions(poly), routeSuggestionOuterExecutor)
+				: CompletableFuture.completedFuture(List.of());
+
+		List<AlongRoutePoiResponse> marts = martsFuture.join();
+		List<AlongRoutePoiResponse> parks = parksFuture.join();
 		var routeSegments = routeSegmentBuilderService.build(route, guideSteps, marts, parks);
 
 		return RouteResponse.from(route, marts, parks, routeSegments);
