@@ -64,35 +64,18 @@ flyway/      - Java 기반 Flyway 마이그레이션
 
 ## 설계 방식
 
-**1. 경로 생성 — 2단계 필터링 (직선거리 → Tmap 호출)**
-
-- Tmap API는 호출당 비용/지연이 있음 → 후보 수거함마다 매번 실제 경로를 조회하면 비효율적
-- 먼저 **직선 거리**로 후보를 빠르게 추린 뒤 (`TMAP_STRAIGHT_TO_WALK_RATIO`,
-  `ESTIMATE_METERS_PER_STEP`로 목표 걸음 수 → 직선 거리 역산), 실제 Tmap 호출은 최종 후보에만 수행
-
-**2. MAXIMUM 활동 레벨 — 캡 우선 방식**
-
-- 요구사항: "최대한 멀리, 단 3km는 넘지 않게"
-- 랭킹 순으로 후보를 하나씩 Tmap 조회 → 3km(`MAXIMUM_MAX_TMAP_DISTANCE_METERS`) 초과 시 다음
-  후보로 (`pickMaximumWithinTmapCap`)
-- **이유**: 목표 걸음 수를 정확히 맞추는 것보다, 실제 도보 거리가 상한을 넘지 않는 제약이 더
-  중요하다고 판단
-
-**3. POI + 3구간 타임라인 동봉**
-
-- 경로 응답에 마트/공원 POI와 초반/중반/막판 3구간 타임라인(`RouteSegmentBuilderService`)을
-  함께 제공
-- **이유**: "목적지로 가라"는 단순 지시가 아니라 "가는 길에 이런 게 있다"는 걷기 동기 부여
-
-**4. 에러 처리 — 설정 누락은 503, 예외는 한 곳에 집중**
+**1. 에러 처리 — 설정 누락은 503, 예외는 한 곳에 집중**
 
 - Tmap 키/GCP 인증정보는 환경마다 없을 수 있다고 가정 → 서버 기동 실패나 500이 아니라
   `IllegalStateException → 503 SERVICE_UNAVAILABLE`로 처리
 - **이유**: 외부 연동 키가 없어도 미션/보상 등 나머지 API는 정상 동작 → 개발/테스트 편의성 확보
 - 예외 처리를 도메인별로 흩어놓지 않고 `GlobalExceptionHandler` 하나로 통합 → 도메인이 늘어나도
   에러 응답 포맷(`ErrorResponse`)이 흔들리지 않게 함
+- 메시지 문자열로 상태코드를 추론하는 대신 `NotFoundException`/`ForbiddenException`/
+  `ConflictException`처럼 의미별 전용 예외 타입을 두고 각각 `@ExceptionHandler`를 연결 →
+  서비스 코드가 "무슨 에러인지"를 타입으로 명시하고, 상태코드 매핑은 핸들러에만 존재
 
-**5. 인증/인가 — Bearer 토큰 필터 + 역할 기반 + 리소스 소유자 검증 3단계**
+**2. 인증/인가 — Bearer 토큰 필터 + 역할 기반 + 리소스 소유자 검증 3단계**
 
 - `FirebaseAuthenticationFilter`(`OncePerRequestFilter`)가 `Authorization: Bearer <Firebase ID
   토큰>` 헤더를 검증해 `SecurityContext`에 인증 정보를 채움. 토큰이 없거나 검증에 실패해도
@@ -108,7 +91,7 @@ flyway/      - Java 기반 Flyway 마이그레이션
   가능하고 "어떤 데이터에 접근할 수 있는가"는 표현할 수 없어, 역할 기반 인가와 리소스 소유자
   검증을 분리된 계층으로 두었음
 
-**6. 리워드 — 적립/환급 분리 + 원장(ledger) 구조**
+**3. 리워드 — 적립/환급 분리 + 원장(ledger) 구조**
 
 - 적립(ACCUMULATION)과 환급(REFUND)을 하나의 `RewardTransaction` 테이블에 타입으로 구분해
   기록 → 잔액 변동 이력을 거래 원장처럼 추적 가능
@@ -118,6 +101,17 @@ flyway/      - Java 기반 Flyway 마이그레이션
   저장 → 실제 현금화(출금) 흐름을 반영
 - **한계**: 잔액 갱신에 낙관적 락(`@Version`) 등 동시성 제어는 아직 없어, 동시 요청 시
   정합성 처리는 개선 과제로 남아있음
+
+**4. 경로 위 POI 조회 — 병렬화하되, 병렬화하면 안 되는 곳은 그대로 유지**
+
+- 경로 폴리라인을 샘플링한 지점마다, 마트/공원 카테고리마다 Tmap POI를 순차 호출하던 걸
+  `CompletableFuture` + 전용 스레드풀(`tmapPoiExecutor`)로 병렬화 (최악의 경우 28회 순차
+  블로킹 호출 → 동시 호출)
+- 마트/공원 조회는 각자 내부적으로 `tmapPoiExecutor`에 다시 작업을 제출하므로, 이 둘을 같은
+  풀에서 동시 실행하면 풀 고갈 시 데드락 위험 → 별도 풀(`routeSuggestionOuterExecutor`)로 분리
+- **의도적으로 병렬화하지 않은 곳**: MAXIMUM 레벨의 `pickMaximumWithinTmapCap`은 3km 캡을
+  만족하는 첫 후보를 찾으면 멈추는 조기 종료 구조라, 병렬화하면 불필요한 유료 Tmap 호출만
+  늘어나 순차 유지
 
 ## 설치 및 실행
 
