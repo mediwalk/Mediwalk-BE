@@ -51,6 +51,17 @@ exception/   - GlobalExceptionHandler (전역 예외 처리)
 flyway/      - Java 기반 Flyway 마이그레이션
 ```
 
+### ERD
+
+![ERD](./docs/images/erd.png)
+
+- `EVENT`가 `COLLECTION_LOCATION`(수거 인증 장소), `ROUTE`(연계 경로), `REWARD_TRANSACTION`(정산)을
+  잇는 허브 역할을 함 — 하나의 활동(수거/걷기)이 리워드로 이어지는 흐름을 하나의 로우로 추적
+- `ROUTE`와 `USER_DAILY_MISSION`은 1:1(선택)로 분리 — 경로 생성은 미션 없이도 가능하고, 미션도
+  경로 생성 없이 완료될 수 있어 강결합을 피함
+- `CONSUMABLE_ITEM`은 아직 구매/보유 엔티티와 연결되지 않은 독립 카탈로그 테이블 (현재는 조회용)
+- 모든 엔티티는 `BaseEntity`(`@MappedSuperclass`)를 상속해 `createdAt`/`updatedAt`을 공통으로 감사
+
 ## 설계 방식
 
 **1. 경로 생성 — 2단계 필터링 (직선거리 → Tmap 호출)**
@@ -81,7 +92,23 @@ flyway/      - Java 기반 Flyway 마이그레이션
 - 예외 처리를 도메인별로 흩어놓지 않고 `GlobalExceptionHandler` 하나로 통합 → 도메인이 늘어나도
   에러 응답 포맷(`ErrorResponse`)이 흔들리지 않게 함
 
-**5. 리워드 — 적립/환급 분리 + 원장(ledger) 구조**
+**5. 인증/인가 — Bearer 토큰 필터 + 역할 기반 + 리소스 소유자 검증 3단계**
+
+- `FirebaseAuthenticationFilter`(`OncePerRequestFilter`)가 `Authorization: Bearer <Firebase ID
+  토큰>` 헤더를 검증해 `SecurityContext`에 인증 정보를 채움. 토큰이 없거나 검증에 실패해도
+  예외를 던지지 않고 익명 상태로 다음 필터로 넘김 — 인증 필요 여부 판단은 `SecurityConfig`의
+  경로별 규칙에 위임
+- `SecurityConfig`에서 회원가입(`POST /api/users`), 로그인(`/api/auth/**`)을 제외한 나머지
+  `/api/**`는 기본적으로 인증을 요구하고, 사용자 목록 조회/삭제·수거함 등록/삭제·경로 등록처럼
+  관리 성격의 엔드포인트는 `hasRole("ADMIN")`으로 별도 제한
+- 역할 기반 제어만으로는 "내 데이터만 조회/수정" 같은 요구를 표현할 수 없어, `{id}` 단위 리소스
+  API(업적 진행도, 일일 미션, 이벤트, 리워드 거래, 걸음 수, 경로 등)에는 `OwnershipGuard`로
+  요청자 ID와 리소스 소유자 ID를 비교하는 검증을 컨트롤러 계층에 추가 (ADMIN은 예외)
+- **이유**: Spring Security의 URL 패턴 매칭은 "어떤 API를 호출할 수 있는가"까지만 표현
+  가능하고 "어떤 데이터에 접근할 수 있는가"는 표현할 수 없어, 역할 기반 인가와 리소스 소유자
+  검증을 분리된 계층으로 두었음
+
+**6. 리워드 — 적립/환급 분리 + 원장(ledger) 구조**
 
 - 적립(ACCUMULATION)과 환급(REFUND)을 하나의 `RewardTransaction` 테이블에 타입으로 구분해
   기록 → 잔액 변동 이력을 거래 원장처럼 추적 가능
@@ -146,3 +173,8 @@ Consumable, Event 등)를 포함한 전체 스펙은 Swagger UI를 참고하세�
 실제 서비스: [https://api.mediwalk.site](https://api.mediwalk.site)
 
 Docker Compose 기반 배포 절차와 롤백 방법은 [DEPLOY.md](./DEPLOY.md)를 참고하세요.
+
+## 작성자
+
+- GitHub: [@hyojae02](https://github.com/hyojae02)
+- Email: dsdk1088@gmail.com
