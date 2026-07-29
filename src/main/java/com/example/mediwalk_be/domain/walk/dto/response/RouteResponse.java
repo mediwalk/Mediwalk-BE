@@ -22,7 +22,6 @@ public record RouteResponse(
 		Boolean hasRestPoints,
 		Boolean notifyEcoMart,
 		Boolean notifyWalkingProgress,
-		List<PointOfInterestResponse> restPoints,
 		List<AlongRoutePoiResponse> martSuggestionsAlongRoute,
 		List<AlongRoutePoiResponse> parkSuggestionsAlongRoute,
 		List<RouteSegmentResponse> routeSegments,
@@ -32,24 +31,18 @@ public record RouteResponse(
 		LocalDateTime updatedAt
 ) {
 	public static RouteResponse from(Route e) {
-		return from(e, null, List.of(), List.of(), List.of());
-	}
-
-	public static RouteResponse from(Route e, List<PointOfInterestResponse> restPoints) {
-		return from(e, restPoints, List.of(), List.of(), List.of());
+		return from(e, List.of(), List.of(), List.of());
 	}
 
 	public static RouteResponse from(
 			Route e,
-			List<PointOfInterestResponse> restPoints,
 			List<AlongRoutePoiResponse> martSuggestionsAlongRoute,
 			List<AlongRoutePoiResponse> parkSuggestionsAlongRoute) {
-		return from(e, restPoints, martSuggestionsAlongRoute, parkSuggestionsAlongRoute, List.of());
+		return from(e, martSuggestionsAlongRoute, parkSuggestionsAlongRoute, List.of());
 	}
 
 	public static RouteResponse from(
 			Route e,
-			List<PointOfInterestResponse> restPoints,
 			List<AlongRoutePoiResponse> martSuggestionsAlongRoute,
 			List<AlongRoutePoiResponse> parkSuggestionsAlongRoute,
 			List<RouteSegmentResponse> routeSegments) {
@@ -69,7 +62,6 @@ public record RouteResponse(
 				e.getHasRestPoints(),
 				e.getNotifyEcoMart(),
 				e.getNotifyWalkingProgress(),
-				restPoints != null ? restPoints : List.of(),
 				martSuggestionsAlongRoute != null ? martSuggestionsAlongRoute : List.of(),
 				parkSuggestionsAlongRoute != null ? parkSuggestionsAlongRoute : List.of(),
 				routeSegments != null ? routeSegments : List.of(),

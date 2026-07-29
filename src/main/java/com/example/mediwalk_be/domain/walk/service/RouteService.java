@@ -4,7 +4,6 @@ import com.example.mediwalk_be.domain.walk.dto.request.CreateRouteRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteFilterRequest;
 import com.example.mediwalk_be.domain.walk.dto.request.RouteGenerationRequest;
 import com.example.mediwalk_be.domain.walk.dto.response.GeneratedRouteResponse;
-import com.example.mediwalk_be.domain.walk.dto.response.PointOfInterestResponse;
 import com.example.mediwalk_be.domain.walk.dto.response.TmapRoutePreviewResponse;
 import com.example.mediwalk_be.domain.walk.entity.CollectionLocation;
 import com.example.mediwalk_be.domain.walk.entity.Route;
@@ -12,7 +11,6 @@ import com.example.mediwalk_be.domain.walk.entity.enums.ActivityLevel;
 import com.example.mediwalk_be.domain.user.entity.User;
 import com.example.mediwalk_be.domain.mission.entity.UserDailyMission;
 import com.example.mediwalk_be.domain.walk.repository.CollectionLocationRepository;
-import com.example.mediwalk_be.domain.walk.repository.PointOfInterestRepository;
 import com.example.mediwalk_be.domain.walk.repository.RouteRepository;
 import com.example.mediwalk_be.domain.walk.util.DistanceUtil;
 import com.example.mediwalk_be.domain.mission.repository.UserDailyMissionRepository;
@@ -43,7 +41,6 @@ public class RouteService {
 	private final UserRepository userRepository;
 	private final UserDailyMissionRepository userDailyMissionRepository;
 	private final CollectionLocationRepository collectionLocationRepository;
-	private final PointOfInterestRepository pointOfInterestRepository;
 	private final TmapPedestrianRouteService tmapPedestrianRouteService;
 
 	public Optional<Route> findById(Long id) {
@@ -230,11 +227,5 @@ public class RouteService {
 		};
 		double straightMeters = targetWalkingMeters / TMAP_STRAIGHT_TO_WALK_RATIO;
 		return (int) Math.round(straightMeters / ESTIMATE_METERS_PER_STEP);
-	}
-
-	public List<PointOfInterestResponse> getRestPointsByRouteId(Long routeId) {
-		return pointOfInterestRepository.findByRouteIdOrderByOrderAsc(routeId).stream()
-				.map(PointOfInterestResponse::from)
-				.toList();
 	}
 }
