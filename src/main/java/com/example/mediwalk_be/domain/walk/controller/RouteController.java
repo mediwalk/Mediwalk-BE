@@ -92,7 +92,6 @@ public class RouteController {
 	}
 
 	private RouteResponse toRouteResponseWithAlongPois(Route route, List<TmapRouteGuideStep> guideSteps) {
-		var restPoints = routeService.getRestPointsByRouteId(route.getId());
 		String poly = route.getRoutePolyline();
 
 		List<AlongRoutePoiResponse> marts =
@@ -105,6 +104,6 @@ public class RouteController {
 						: List.of();
 		var routeSegments = routeSegmentBuilderService.build(route, guideSteps, marts, parks);
 
-		return RouteResponse.from(route, restPoints, marts, parks, routeSegments);
+		return RouteResponse.from(route, marts, parks, routeSegments);
 	}
 }
